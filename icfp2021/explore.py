@@ -27,7 +27,7 @@ r = requests.get("https://poses.live/api/hello", headers=headers)
 assert r.json() == {"hello": TEAM_NAME}, r.text
 
 # %% get a problem
-problem_number = 16
+problem_number = 42
 r = requests.get("https://poses.live/api/problems/" + str(problem_number), headers=headers)
 problem = r.json()
 problem
@@ -134,8 +134,8 @@ problem
 
 # %%
 import time
-skip = 1, 11, 12, 13, 16, 23
-for i in range(18,60):
+skip = 1, 11, 12, 13, 16, 17, 18, 22, 23, 27
+for i in range(1,60):
     time.sleep(1)
     if i in skip:
         continue
@@ -146,7 +146,7 @@ for i in range(18,60):
     vertices = figure["vertices"]  # list of (x, y) pairs
     edges = figure["edges"]  # list of (vertex, vertex) pairs
 
-    if len(vertices) > 10:
+    if len(vertices) > 10 or len(problem['hole']) > 10:
         print('too big, skipping')
         continue
     print('problem', problem)
@@ -176,7 +176,11 @@ for i in range(18,60):
             json=solution,
             headers=headers
         )
-        r.raise_for_status()
+        try:
+            r.raise_for_status()
+        except Exception as exc:
+            print('There was a problem: %s' % (exc))
+            continue
         print(r.text)
         continue
     else:

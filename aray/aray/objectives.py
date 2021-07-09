@@ -9,7 +9,6 @@ import torch
 from aray.problem import Edge
 
 
-# %% distance function
 def dist(a: torch.tensor, b: torch.tensor) -> torch.tensor:
     ''' Squared distance function for points a and b. '''
     # assert a and b have same shape, and last dim is 2
@@ -21,7 +20,6 @@ def dist(a: torch.tensor, b: torch.tensor) -> torch.tensor:
     return result
 
 
-# %%
 def loss_stretch(edges: List[Edge], original: torch.tensor, current: torch.tensor, epsilon: int):
     ''' Calculate the total stretch loss for a problem '''
     # assert original and current have 2 dims, same shape, and second dim is 2
@@ -38,3 +36,23 @@ def loss_stretch(edges: List[Edge], original: torch.tensor, current: torch.tenso
     stretch = torch.max(torch.abs(ratio - 1) * 1e6 -
                         epsilon, torch.zeros_like(ratio))
     return torch.sum(stretch)
+
+
+def loss_dislikes(hole: torch.tensor, current: torch.tensor, temperature: float):
+    assert hole.shape[-1] == 2, f'{hole.shape}'
+    assert current.shape[-1] == 2, f'{current.shape}'
+    assert len(hole.shape) == 2, f'{hole.shape}'
+    assert len(current.shape) == 2, f'{current.shape}'
+    assert temperature >= 0, f'{temperature}'
+    assert isinstance(temperature, float), f'{temperature}'
+
+    # compute distance matrix
+    Hx = hole[:, None, 0]
+    Hy = hole[:, None, 1]
+    Vx = current[None, :, 0]
+    Vy = current[None, :, 1]
+    D = (Hx - Vx)**2 + (Hy - Vy)**2
+    assert D.shape == (len(hole), len(current)), f'{D.shape} vs {len(hole),len(current)}'
+    W = torch.softmax(-D / temperature, dim=1)
+    assert D.shape == W.shape, f'{D.shape} vs {W.shape}'
+    return torch.sum(D * W)

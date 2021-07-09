@@ -4,8 +4,8 @@ use log::{error, info};
 use log::{Level, Metadata, Record};
 use log::{LevelFilter, SetLoggerError};
 
-mod format;
 mod dislikes;
+mod format;
 
 static LOGGER: SimpleLogger = SimpleLogger;
 
@@ -73,27 +73,26 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     match matches.subcommand_name() {
         Some(PARSE_SUBCOMMAND) => {
             info!("Parsing file...");
-            let file =
-                if let Some(parse_matches) = matches.subcommand_matches(PARSE_SUBCOMMAND) {
-                    if let Some(problem_file_path) = parse_matches.value_of(PARSE_FILE_FLAG) {
-                        match std::fs::File::open(problem_file_path) {
-                            Ok(file) => file,
-                            Err(err) => {
-                                println!("\nFailed to open problem file: {}\n", err);
-                                print_long_help();
-                                ::std::process::exit(1);
-                            }
+            let file = if let Some(parse_matches) = matches.subcommand_matches(PARSE_SUBCOMMAND) {
+                if let Some(problem_file_path) = parse_matches.value_of(PARSE_FILE_FLAG) {
+                    match std::fs::File::open(problem_file_path) {
+                        Ok(file) => file,
+                        Err(err) => {
+                            println!("\nFailed to open problem file: {}\n", err);
+                            print_long_help();
+                            ::std::process::exit(1);
                         }
-                    } else {
-                        error!("No problem file was provided.");
-                        print_long_help();
-                        ::std::process::exit(1);
                     }
                 } else {
-                    error!("Unknown error occurred.");
+                    error!("No problem file was provided.");
                     print_long_help();
                     ::std::process::exit(1);
-                };
+                }
+            } else {
+                error!("Unknown error occurred.");
+                print_long_help();
+                ::std::process::exit(1);
+            };
 
             let mut buf_reader = std::io::BufReader::new(file);
             let mut contents = String::new();

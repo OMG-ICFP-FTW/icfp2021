@@ -22,5 +22,21 @@ We compute this for edge ``a, b`` with ``stretch = max(abs(d(a', b') / d(a, b) -
 # %% imports
 import torch
 
+# %% distance function
+
+
+def dist(a: torch.tensor, b: torch.tensor) -> torch.tensor:
+    '''
+    Squared distance function for points a and b.
+    '''
+    # assert a and b have same shape, and last dim is 2
+    assert a.shape == b.shape, f'a and b have different shapes: {a.shape} and {b.shape}'
+    assert a.shape[-1] == 2, f'a and b have last dim != 2: {a.shape}'
+    result = (a[..., 0] - b[..., 0])**2 + (a[..., 1] - b[..., 1])**2
+    # assert result matches shape of a and b, without the last dim
+    assert result.shape == a.shape[:-1], f'dist(a, b) {result.shape} a {a.shape}'
+    return result
+
+
 # %%
-def loss_stretch(problem, solution):
+# def loss_stretch(problem, solution):

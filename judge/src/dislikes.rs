@@ -99,10 +99,8 @@ fn convex_hull(points: &Vec<Position>) -> Vec<Position> {
         x: p.x() as u32,
         y: p.y() as u32,
     }).collect();
-    hull_points.sort();
-    hull_points.dedup();
 
-    hull_points
+    hull_points.split_last().unwrap().1.to_vec()
 }
 
 #[cfg(test)]

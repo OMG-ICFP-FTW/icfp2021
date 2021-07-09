@@ -1,6 +1,6 @@
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Position {
     pub x: u32,
     pub y: u32,
@@ -32,17 +32,14 @@ impl<'de> Deserialize<'de> for Position {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct EdgeId(u32);
-
 #[derive(Debug)]
 pub struct Edge {
-    pub start: EdgeId,
-    pub end: EdgeId,
+    pub start: usize,
+    pub end: usize,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct EdgeHelper(EdgeId, EdgeId);
+struct EdgeHelper(usize, usize);
 
 impl Serialize for Edge {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
@@ -81,4 +78,9 @@ pub struct Problem {
     pub hole: Hole,
     pub figure: Figure,
     pub epsilon: u32,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Solution {
+    pub vertices: Vec<Position>
 }

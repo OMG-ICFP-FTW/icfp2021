@@ -49,3 +49,19 @@ The solution must lie entirely within our (possibly concave) hole.  We enforce t
 
 We have two sets of barrier functions: barriers from the hole to the solution and barriers from the solution to the hole.
 
+The objective assumes every point is valid.  To enforce this, we occasionally check if there are invalid points, and then abort if found.
+
+For each point in the body, we add barrier loss for every edge that is < 1 distance away.
+
+Distance is calculated as normal euclidean distance ``dist(a, b) = ((a[0] - b[0])**2 + (a[1] - b[1])**2)**0.5``.
+
+This barrier loss is logarithmic: ``barrier = - gamma * log(dist)``, with ``gamma`` controlling the sharpness.
+
+(TODO: should try inverse barrier as well, ``barrier = gamma / dist``)
+
+Intialization
+-------------
+
+To initialize, we shrink down the body to less than 1x1, and then add noise to all of the coordinates.
+
+For now, rejection sample from the hole bounding box until all of our points are in the body.

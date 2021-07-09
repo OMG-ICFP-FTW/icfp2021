@@ -32,7 +32,7 @@ impl<'de> Deserialize<'de> for Position {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord)]
 pub struct Edge {
     pub start: usize,
     pub end: usize,
@@ -65,9 +65,6 @@ impl<'de> Deserialize<'de> for Edge {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct Hole(Vec<Position>);
-
-#[derive(Serialize, Deserialize, Debug)]
 pub struct Figure {
     pub edges: Vec<Edge>,
     pub vertices: Vec<Position>,
@@ -75,12 +72,12 @@ pub struct Figure {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Problem {
-    pub hole: Hole,
+    pub hole: Vec<Position>,
     pub figure: Figure,
     pub epsilon: u32,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Solution {
-    pub vertices: Vec<Position>
+    pub vertices: Vec<Position>,
 }

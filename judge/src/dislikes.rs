@@ -18,7 +18,6 @@
 ///
 /// C. Every point located on any line segment of the figure in the assumed pose must either lay
 ///     inside the hole, or on its boundary.
-
 use crate::format::*;
 
 pub struct RawEdge {
@@ -46,16 +45,29 @@ pub fn edge_deformation_constraint(original: &RawEdge, moved: &RawEdge, epsilon:
 
 /// Constraint A
 pub fn figures_are_consistent(original: &Figure, moved: &Figure) -> bool {
-    panic!("Not yet implemented");
+    if original.edges.len() != moved.edges.len() {
+        return false;
+    }
+
+    let mut oedge_sorted = original.edges.clone();
+    oedge_sorted.sort();
+    let mut medge_sorted = moved.edges.clone();
+    medge_sorted.sort();
+
+    (0..original.edges.len()).all(|i| oedge_sorted[i] == medge_sorted[i])
 }
 
 /// Constraint B
-pub fn figure_is_within_deformation_bounds(original: &Figure, moved: &Figure, epsilon: u32) -> bool {
+pub fn figure_is_within_deformation_bounds(
+    original: &Figure,
+    moved: &Figure,
+    epsilon: u32,
+) -> bool {
     if original.vertices.len() != moved.vertices.len() {
-        return false
+        return false;
     }
     if original.edges.len() != moved.edges.len() {
-        return false
+        return false;
     }
 
     for edge in original.edges.iter() {
@@ -68,19 +80,44 @@ pub fn figure_is_within_deformation_bounds(original: &Figure, moved: &Figure, ep
             end: moved.vertices[edge.end].clone(),
         };
         if !edge_deformation_constraint(&original_edge, &moved_edge, epsilon) {
-            return false
+            return false;
         }
     }
 
-    return true
+    return true;
+}
+
+/// Given a point cloud, return the convex hull
+fn gift_wrap(points: &Vec<Position>) -> Vec<Position> {
+    panic!("Not yet implemented");
+}
+
+/// Find the bounding polygon for this figure
+fn bounding_polygon(figure: &Figure, hull: &Vec<Position>) -> Vec<Position> {
+    panic!("Not yet implemented");
+}
+
+fn subtract_polygons(lead: &Vec<Position>, follow: &Vec<Position>) -> Vec<Position> {
+    panic!("Not yet implemented");
 }
 
 /// Constraint C
-pub fn figure_is_within_hole(figure: &Figure, hole: &Hole) -> bool {
-    panic!("Not yet implemented");
+pub fn figure_is_within_hole(figure: &Figure, hole: &Vec<Position>) -> bool {
+    let hull = gift_wrap(&figure.vertices);
+    let bounds = bounding_polygon(figure, &hull);
+
+    subtract_polygons(&bounds, hole).len() == 0
 }
 
 /// Apply all three constaints of A, B, and C
 pub fn figure_is_valid(problem: &Problem, solution: &Solution) -> bool {
-    panic!("Not yet implemented");
+    let original_figure = &problem.figure;
+    let moved_figure = Figure {
+        edges: original_figure.edges.clone(),
+        vertices: solution.vertices.clone(),
+    };
+
+    figures_are_consistent(original_figure, &moved_figure)
+        && figure_is_within_deformation_bounds(original_figure, &moved_figure, problem.epsilon)
+        && figure_is_within_hole(&moved_figure, &problem.hole)
 }

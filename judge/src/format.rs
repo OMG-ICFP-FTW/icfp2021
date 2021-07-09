@@ -2,8 +2,8 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 #[derive(Debug)]
 pub struct Position {
-    x: u32,
-    y: u32,
+    pub x: u32,
+    pub y: u32,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -37,8 +37,8 @@ pub struct EdgeId(u32);
 
 #[derive(Debug)]
 pub struct Edge {
-    start: EdgeId,
-    end: EdgeId,
+    pub start: EdgeId,
+    pub end: EdgeId,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -72,13 +72,13 @@ pub struct Hole(Vec<Position>);
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Figure {
-    edges: Vec<Edge>,
-    vertices: Vec<Position>,
+    pub edges: Vec<Edge>,
+    pub vertices: Vec<Position>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Problem {
-    hole: Hole,
-    figure: Figure,
-    epsilon: u32,
+    pub hole: Hole,
+    pub figure: Figure,
+    pub epsilon: u32,
 }

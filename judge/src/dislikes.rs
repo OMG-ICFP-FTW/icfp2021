@@ -88,80 +88,59 @@ pub fn figure_is_within_deformation_bounds(
 }
 
 /// Given a point cloud, return the convex hull
-fn gift_wrap(points: &Vec<Position>) -> Vec<Position> {
-    // https://en.wikipedia.org/wiki/Gift_wrapping_algorithm
-    // algorithm jarvis(S) is
-    // // S is the set of points
-    // // P will be the set of points which form the convex hull. Final set size is i.
-    // pointOnHull = leftmost point in S // which is guaranteed to be part of the CH(S)
-    // i := 0
-    // repeat
-    //     P[i] := pointOnHull
-    //     endpoint := S[0]      // initial endpoint for a candidate edge on the hull
-    //     for j from 0 to |S| do
-    //         // endpoint == pointOnHull is a rare case and can happen only when j == 1 and a
-    //         // better endpoint has not yet been set for the loop
-    //         if (endpoint == pointOnHull) or (S[j] is on left of line from P[i] to endpoint) then
-    //             endpoint := S[j]   // found greater left turn, update endpoint
-    //     i := i + 1
-    //     pointOnHull = endpoint
-    // until endpoint = P[0]      // wrapped around to first hull point
-    let mut hull: Vec<Position> = vec![];
-    let mut all_points = points.clone();
-    all_points.sort();
-    let mut point_on_hull = &all_points[0];
-    for next_point in all_points.iter() {
-        hull.push(point_on_hull.clone());
-        let mut endpoint = next_point;
+fn convex_hull(points: &Vec<Position>) -> Vec<Position> {
+    use geo::convex_hull::ConvexHull as _;
 
-        for candidate in all_points.iter() {
-            // y = mx + b => y_bound = slope*x + offset
-            let slope = (point_on_hull.y as f32 - endpoint.y as f32)
-                / (point_on_hull.x as f32 - endpoint.x as f32);
-            let offset = (point_on_hull.y as f32) - slope * (point_on_hull.x as f32);
+    let coords: Vec<geo::Coordinate<f32>> = points.iter().map(|p| geo::Coordinate{x: p.x as f32, y: p.y as f32}).collect();
+    let poly = geo::Polygon::new(geo::LineString::from(coords), vec![]);
+    let hull = poly.convex_hull();
 
-            let candidate_x = candidate.x as f32;
-            let candidate_y = candidate.y as f32;
-            let y_bound = slope * (candidate_x) + offset;
-            let is_to_the_left = {
-                (slope > 0.0 && candidate_y > y_bound) || (slope < 0.0 && candidate_y < y_bound)
-            };
+    let mut hull_points: Vec<Position> = hull.exterior().points_iter().map(|p| Position {
+        x: p.x() as u32,
+        y: p.y() as u32,
+    }).collect();
+    hull_points.sort();
+    hull_points.dedup();
 
-            if (endpoint == point_on_hull) || is_to_the_left {
-                endpoint = &candidate;
-            }
-        }
-        point_on_hull = endpoint;
-
-        if *endpoint == all_points[0] {
-            break;
-        }
-    }
-
-    return hull;
+    hull_points
 }
 
 #[cfg(test)]
 #[test]
-fn test_gift_wrap() {
-    let single_point = vec![Position { x: 0, y: 0 }];
-    assert_eq!(gift_wrap(&single_point), single_point);
-
-    let diamond = vec![
+fn test_convex_hull() {
+    let mut diamond = vec![
         Position { x: 1, y: 2 },
         Position { x: 2, y: 1 },
         Position { x: 1, y: 0 },
         Position { x: 0, y: 1 },
     ];
-    assert_eq!(gift_wrap(&diamond), diamond);
+    let mut diamond_hull = convex_hull(&diamond);
+    diamond.sort();
+    diamond_hull.sort();
+    assert_eq!(diamond_hull, diamond);
 
-    let square = vec![
+    let mut square = vec![
         Position { x: 0, y: 0 },
-        Position { x: 0, y: 1 },
-        Position { x: 1, y: 1 },
-        Position { x: 1, y: 0 },
+        Position { x: 0, y: 2 },
+        Position { x: 2, y: 2 },
+        Position { x: 2, y: 0 },
     ];
-    assert_eq!(gift_wrap(&square), square);
+    let mut square_hull = convex_hull(&square);
+    square.sort();
+    square_hull.sort();
+    assert_eq!(square_hull, square);
+
+    let mut square_with_interior_point = vec![
+        Position { x: 0, y: 0 },
+        Position { x: 0, y: 2 },
+        Position { x: 2, y: 2 },
+        Position { x: 2, y: 0 },
+        Position { x: 1, y: 1 },
+    ];
+    let mut square_with_interior_point_hull = convex_hull(&square_with_interior_point);
+    square_with_interior_point.sort();
+    square_with_interior_point_hull.sort();
+    assert_eq!(square_with_interior_point_hull, square);
 }
 
 /// Find the bounding polygon for this figure
@@ -175,7 +154,7 @@ fn subtract_polygons(lead: &Vec<Position>, follow: &Vec<Position>) -> Vec<Positi
 
 /// Constraint C
 pub fn figure_is_within_hole(figure: &Figure, hole: &Vec<Position>) -> bool {
-    let hull = gift_wrap(&figure.vertices);
+    let hull = convex_hull(&figure.vertices);
     let bounds = bounding_polygon(figure, &hull);
 
     subtract_polygons(&bounds, hole).len() == 0

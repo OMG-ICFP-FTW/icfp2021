@@ -88,8 +88,59 @@ pub fn figure_is_within_deformation_bounds(
 }
 
 /// Given a point cloud, return the convex hull
-fn gift_wrap(points: &Vec<Position>) -> Vec<Position> {
-    panic!("Not yet implemented");
+fn convex_hull(points: &Vec<Position>) -> Vec<Position> {
+    use geo::convex_hull::ConvexHull as _;
+
+    let coords: Vec<geo::Coordinate<f32>> = points.iter().map(|p| geo::Coordinate{x: p.x as f32, y: p.y as f32}).collect();
+    let poly = geo::Polygon::new(geo::LineString::from(coords), vec![]);
+    let hull = poly.convex_hull();
+
+    let mut hull_points: Vec<Position> = hull.exterior().points_iter().map(|p| Position {
+        x: p.x() as u32,
+        y: p.y() as u32,
+    }).collect();
+    hull_points.sort();
+    hull_points.dedup();
+
+    hull_points
+}
+
+#[cfg(test)]
+#[test]
+fn test_convex_hull() {
+    let mut diamond = vec![
+        Position { x: 1, y: 2 },
+        Position { x: 2, y: 1 },
+        Position { x: 1, y: 0 },
+        Position { x: 0, y: 1 },
+    ];
+    let mut diamond_hull = convex_hull(&diamond);
+    diamond.sort();
+    diamond_hull.sort();
+    assert_eq!(diamond_hull, diamond);
+
+    let mut square = vec![
+        Position { x: 0, y: 0 },
+        Position { x: 0, y: 2 },
+        Position { x: 2, y: 2 },
+        Position { x: 2, y: 0 },
+    ];
+    let mut square_hull = convex_hull(&square);
+    square.sort();
+    square_hull.sort();
+    assert_eq!(square_hull, square);
+
+    let mut square_with_interior_point = vec![
+        Position { x: 0, y: 0 },
+        Position { x: 0, y: 2 },
+        Position { x: 2, y: 2 },
+        Position { x: 2, y: 0 },
+        Position { x: 1, y: 1 },
+    ];
+    let mut square_with_interior_point_hull = convex_hull(&square_with_interior_point);
+    square_with_interior_point.sort();
+    square_with_interior_point_hull.sort();
+    assert_eq!(square_with_interior_point_hull, square);
 }
 
 /// Find the bounding polygon for this figure
@@ -103,7 +154,7 @@ fn subtract_polygons(lead: &Vec<Position>, follow: &Vec<Position>) -> Vec<Positi
 
 /// Constraint C
 pub fn figure_is_within_hole(figure: &Figure, hole: &Vec<Position>) -> bool {
-    let hull = gift_wrap(&figure.vertices);
+    let hull = convex_hull(&figure.vertices);
     let bounds = bounding_polygon(figure, &hull);
 
     subtract_polygons(&bounds, hole).len() == 0

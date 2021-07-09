@@ -1,9 +1,9 @@
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Position {
-    x: u32,
-    y: u32,
+    pub x: u32,
+    pub y: u32,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -32,17 +32,14 @@ impl<'de> Deserialize<'de> for Position {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct EdgeId(u32);
-
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord)]
 pub struct Edge {
-    start: EdgeId,
-    end: EdgeId,
+    pub start: usize,
+    pub end: usize,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct EdgeHelper(EdgeId, EdgeId);
+struct EdgeHelper(usize, usize);
 
 impl Serialize for Edge {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
@@ -68,17 +65,19 @@ impl<'de> Deserialize<'de> for Edge {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct Hole(Vec<Position>);
-
-#[derive(Serialize, Deserialize, Debug)]
 pub struct Figure {
-    edges: Vec<Edge>,
-    vertices: Vec<Position>,
+    pub edges: Vec<Edge>,
+    pub vertices: Vec<Position>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Problem {
-    hole: Hole,
-    figure: Figure,
-    epsilon: u32,
+    pub hole: Vec<Position>,
+    pub figure: Figure,
+    pub epsilon: u32,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Solution {
+    pub vertices: Vec<Position>,
 }

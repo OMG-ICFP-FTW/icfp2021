@@ -1,0 +1,55 @@
+#!/usr/bin/env python3
+# problem.py - dataclass for problem definition
+
+# %%
+import os
+import json
+from dataclasses import dataclass
+from typing import List
+
+
+# Path of 'icfp2021' directory
+BASE_PATH = base = os.path.dirname(os.path.dirname(
+    os.path.dirname(os.path.realpath(__file__))))
+
+
+@dataclass
+class Point:
+    x: int
+    y: int
+
+
+@dataclass
+class Edge:
+    v1: int
+    v2: int
+
+
+@dataclass
+class Figure:
+    vertices: List[Point]
+    edges: List[Edge]
+
+
+@dataclass
+class Problem:
+    hole: List[Point]
+    figure: Figure
+    epsilon: int
+
+    @classmethod
+    def get(cls, number):
+        filename = os.path.join(BASE_PATH, 'problems', f'{number}.json')
+        with open(filename, 'r') as f:
+            return cls(**json.load(f))
+
+    def json(self):
+        return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
+
+
+@dataclass
+class Pose:
+    vertices: List[Point]
+
+    def json(self):
+        return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)

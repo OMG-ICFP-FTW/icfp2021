@@ -2,7 +2,7 @@
 name = "icfp2021"
 version = "0.1.0"
 description = ""
-authors = ["A Ray <a@machinaut.com>"]
+authors = ["A Ray <aray@openai.com>"]
 
 [tool.poetry.dependencies]
 python = "^3.9"

@@ -27,7 +27,7 @@ r = requests.get("https://poses.live/api/hello", headers=headers)
 assert r.json() == {"hello": TEAM_NAME}, r.text
 
 # %% get a problem
-problem_number = 20
+problem_number = 16
 r = requests.get("https://poses.live/api/problems/" + str(problem_number), headers=headers)
 problem = r.json()
 problem
@@ -42,9 +42,10 @@ for i in range(len(problem['figure']['edges'])):
 
 # %% post a solution
 solution = {
-    "vertices": [[0, 20], [20, 0], [20, 40], [0, 20], [41, 56], [20, 40]],
+    "vertices": None,
 }
 
+# %%
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -117,6 +118,7 @@ for ordering in itertools.product(possible_points, repeat=number_of_points):
         best_ratio = this_ratio
 print(best_ratio)
 print(best)
+solution = best
 
 # %%
 r = requests.post(
@@ -130,3 +132,53 @@ r.text
 # %%
 problem
 
+# %%
+import time
+skip = 1, 11, 12, 13, 16, 23
+for i in range(18,60):
+    time.sleep(1)
+    if i in skip:
+        continue
+    print('problem', i)
+    r = requests.get("https://poses.live/api/problems/" + str(i), headers=headers)
+    problem = r.json()
+    figure = problem["figure"]
+    vertices = figure["vertices"]  # list of (x, y) pairs
+    edges = figure["edges"]  # list of (vertex, vertex) pairs
+
+    if len(vertices) > 10:
+        print('too big, skipping')
+        continue
+    print('problem', problem)
+
+    best = None
+    best_ratio = None
+    possible_points = problem['hole']
+    number_of_points = len(figure['vertices'])
+
+    # try all possible orderings of the points, drawing with replacement
+    for ordering in itertools.product(possible_points, repeat=number_of_points):
+        candidate = {'vertices': list(ordering)}
+        this_ratio = max(get_ratios(problem, candidate))
+        if best is None or this_ratio < best_ratio:
+            best = candidate
+            best_ratio = this_ratio
+    print(best_ratio)
+    print(best)
+    solution = best
+
+    # check if the ratio is within the tolerance
+    if best_ratio < problem['epsilon']:
+        print('submitting', i)
+        # Submit the solution
+        r = requests.post(
+            "https://poses.live/api/problems/" + str(i) + "/solutions",
+            json=solution,
+            headers=headers
+        )
+        r.raise_for_status()
+        print(r.text)
+        continue
+    else:
+        print('failed to find', i)
+        continue

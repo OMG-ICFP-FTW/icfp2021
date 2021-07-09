@@ -89,7 +89,79 @@ pub fn figure_is_within_deformation_bounds(
 
 /// Given a point cloud, return the convex hull
 fn gift_wrap(points: &Vec<Position>) -> Vec<Position> {
-    panic!("Not yet implemented");
+    // https://en.wikipedia.org/wiki/Gift_wrapping_algorithm
+    // algorithm jarvis(S) is
+    // // S is the set of points
+    // // P will be the set of points which form the convex hull. Final set size is i.
+    // pointOnHull = leftmost point in S // which is guaranteed to be part of the CH(S)
+    // i := 0
+    // repeat
+    //     P[i] := pointOnHull
+    //     endpoint := S[0]      // initial endpoint for a candidate edge on the hull
+    //     for j from 0 to |S| do
+    //         // endpoint == pointOnHull is a rare case and can happen only when j == 1 and a
+    //         // better endpoint has not yet been set for the loop
+    //         if (endpoint == pointOnHull) or (S[j] is on left of line from P[i] to endpoint) then
+    //             endpoint := S[j]   // found greater left turn, update endpoint
+    //     i := i + 1
+    //     pointOnHull = endpoint
+    // until endpoint = P[0]      // wrapped around to first hull point
+    let mut hull: Vec<Position> = vec![];
+    let mut all_points = points.clone();
+    all_points.sort();
+    let mut point_on_hull = &all_points[0];
+    for next_point in all_points.iter() {
+        hull.push(point_on_hull.clone());
+        let mut endpoint = next_point;
+
+        for candidate in all_points.iter() {
+            // y = mx + b => y_bound = slope*x + offset
+            let slope = (point_on_hull.y as f32 - endpoint.y as f32)
+                / (point_on_hull.x as f32 - endpoint.x as f32);
+            let offset = (point_on_hull.y as f32) - slope * (point_on_hull.x as f32);
+
+            let candidate_x = candidate.x as f32;
+            let candidate_y = candidate.y as f32;
+            let y_bound = slope * (candidate_x) + offset;
+            let is_to_the_left = {
+                (slope > 0.0 && candidate_y > y_bound) || (slope < 0.0 && candidate_y < y_bound)
+            };
+
+            if (endpoint == point_on_hull) || is_to_the_left {
+                endpoint = &candidate;
+            }
+        }
+        point_on_hull = endpoint;
+
+        if *endpoint == all_points[0] {
+            break;
+        }
+    }
+
+    return hull;
+}
+
+#[cfg(test)]
+#[test]
+fn test_gift_wrap() {
+    let single_point = vec![Position { x: 0, y: 0 }];
+    assert_eq!(gift_wrap(&single_point), single_point);
+
+    let diamond = vec![
+        Position { x: 1, y: 2 },
+        Position { x: 2, y: 1 },
+        Position { x: 1, y: 0 },
+        Position { x: 0, y: 1 },
+    ];
+    assert_eq!(gift_wrap(&diamond), diamond);
+
+    let square = vec![
+        Position { x: 0, y: 0 },
+        Position { x: 0, y: 1 },
+        Position { x: 1, y: 1 },
+        Position { x: 1, y: 0 },
+    ];
+    assert_eq!(gift_wrap(&square), square);
 }
 
 /// Find the bounding polygon for this figure

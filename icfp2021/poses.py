@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-'''
+"""
 Wire format
 Problems and poses are encoded in JSON. A complete example of a problem is given at the bottom of this
 section.
@@ -24,37 +24,118 @@ Problem A problem is encoded as a JSON object with the following properties:
 
 Pose A pose is encoded as a JSON object with a single property:
 • vertices: An array of points, indicating the new positions of points in the assumed pose.
+"""
+# %% example
+# As a full example, here is the JSON encoding of the “Lambdaman” problem.
+problem = {
+    "hole": [
+        [55, 80],
+        [65, 95],
+        [95, 95],
+        [35, 5],
+        [5, 5],
+        [35, 50],
+        [5, 95],
+        [35, 95],
+        [45, 80],
+    ],
+    "figure": {
+        "edges": [
+            [2, 5],
+            [5, 4],
+            [4, 1],
+            [1, 0],
+            [0, 8],
+            [8, 3],
+            [3, 7],
+            [7, 11],
+            [11, 13],
+            [13, 12],
+            [12, 18],
+            [18, 19],
+            [19, 14],
+            [14, 15],
+            [15, 17],
+            [17, 16],
+            [16, 10],
+            [10, 6],
+            [6, 2],
+            [8, 12],
+            [7, 9],
+            [9, 3],
+            [8, 9],
+            [9, 12],
+            [13, 9],
+            [9, 11],
+            [4, 8],
+            [12, 14],
+            [5, 10],
+            [10, 15],
+        ],
+        "vertices": [
+            [20, 30],
+            [20, 40],
+            [30, 95],
+            [40, 15],
+            [40, 35],
+            [40, 65],
+            [40, 95],
+            [45, 5],
+            [45, 25],
+            [50, 15],
+            [50, 70],
+            [55, 5],
+            [55, 25],
+            [60, 15],
+            [60, 35],
+            [60, 65],
+            [60, 95],
+            [70, 95],
+            [80, 30],
+            [80, 40],
+        ],
+    },
+    "epsilon": 150000,
+}
+# And this is the JSON encoding of the pose in the figure we saw earlier:
+solution = {
+    "vertices": [
+        [21, 28],
+        [31, 28],
+        [31, 87],
+        [29, 41],
+        [44, 43],
+        [58, 70],
+        [38, 79],
+        [32, 31],
+        [36, 50],
+        [39, 40],
+        [66, 77],
+        [42, 29],
+        [46, 49],
+        [49, 38],
+        [39, 57],
+        [69, 66],
+        [41, 70],
+        [39, 60],
+        [42, 25],
+        [40, 35],
+    ]
+}
 
-As a full example, here is the JSON encoding of the “Lambdaman” problem.
-{
-"hole": [
-[55, 80], [65, 95], [95, 95], [35, 5], [5, 5],
-[35, 50], [5, 95], [35, 95], [45, 80]
-],
-"figure": {
-"edges": [
-[2, 5], [5, 4], [4, 1], [1, 0], [0, 8], [8, 3], [3, 7],
-[7, 11], [11, 13], [13, 12], [12, 18], [18, 19], [19, 14],
-[14, 15], [15, 17], [17, 16], [16, 10], [10, 6], [6, 2],
-[8, 12], [7, 9], [9, 3], [8, 9], [9, 12], [13, 9], [9, 11],
-[4, 8], [12, 14], [5, 10], [10, 15]
-],
-"vertices": [
-[20, 30], [20, 40], [30, 95], [40, 15], [40, 35], [40, 65],
-[40, 95], [45, 5], [45, 25], [50, 15], [50, 70], [55, 5],
-[55, 25], [60, 15], [60, 35], [60, 65], [60, 95], [70, 95],
-[80, 30], [80, 40]
-]
-},
-"epsilon": 150000
-}
-And this is the JSON encoding of the pose in the figure we saw earlier:
-{
-"vertices": [
-[21, 28], [31, 28], [31, 87], [29, 41], [44, 43], [58, 70],
-[38, 79], [32, 31], [36, 50], [39, 40], [66, 77], [42, 29],
-[46, 49], [49, 38], [39, 57], [69, 66], [41, 70], [39, 60],
-[42, 25], [40, 35]
-]
-}
-'''
+# Calculate all the distances between original and final points
+def dist(a, b):
+    return (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2
+
+def ratio(a1, b1, a2, b2):
+    return abs((dist(a2, b2) / dist(a1, b1)) - 1) * 1_000_000
+
+# get all the ratios for all the edges as a list
+def get_ratios(problem, solution):
+    ratios = []
+    for edge in problem['figure']['edges']:
+        r = ratio(problem['figure']['vertices'][edge[0]], problem['figure']['vertices'][edge[1]], solution['vertices'][edge[0]], solution['vertices'][edge[1]])
+        ratios.append(r)
+    return ratios
+
+max(get_ratios(problem, solution))

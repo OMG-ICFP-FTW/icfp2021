@@ -4,7 +4,7 @@
 import unittest
 import torch
 
-from aray.objectives import dist, loss_stretch, loss_dislikes
+from aray.objectives import dist, outside, loss_stretch, loss_dislikes
 
 
 class TestDistance(unittest.TestCase):
@@ -23,6 +23,38 @@ class TestDistance(unittest.TestCase):
         a = torch.Tensor([0, 0])
         b = torch.Tensor([3, 4])
         self.assertEqual(dist(a, b).tolist(), 25.)
+
+
+class TestOutside(unittest.TestCase):
+    def test_inside_zero(self):
+        a = torch.Tensor([0, 0])
+        b = torch.Tensor([0, 2])
+        c = torch.Tensor([0, 1])
+        self.assertEqual(outside(a, b, c).tolist(), 0.0)
+
+    def test_inside_one(self):
+        a = torch.Tensor([0, 0])
+        b = torch.Tensor([0, 2])
+        c = torch.Tensor([1, 1])
+        self.assertEqual(outside(a, b, c).tolist(), 1.0)
+
+    def test_outside_one(self):
+        a = torch.Tensor([0, 0])
+        b = torch.Tensor([0, 2])
+        c = torch.Tensor([1, -1])
+        self.assertEqual(outside(a, b, c).tolist(), 1.0)
+
+    def test_outside_one_longer(self):
+        a = torch.Tensor([0, 0])
+        b = torch.Tensor([0, 10])
+        c = torch.Tensor([-1, 1])
+        self.assertEqual(outside(a, b, c).tolist(), 1.0)
+
+    def test_outside_half(self):
+        a = torch.Tensor([0, 0])
+        b = torch.Tensor([0, 2])
+        c = torch.Tensor([0.5, 1])
+        self.assertEqual(outside(a, b, c).tolist(), 0.5)
 
 
 class TestStretch(unittest.TestCase):

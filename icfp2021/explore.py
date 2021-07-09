@@ -27,42 +27,24 @@ r = requests.get("https://poses.live/api/hello", headers=headers)
 assert r.json() == {"hello": TEAM_NAME}, r.text
 
 # %% get a problem
-r = requests.get("https://poses.live/api/problems/1", headers=headers)
+problem_number = 20
+r = requests.get("https://poses.live/api/problems/" + str(problem_number), headers=headers)
 problem = r.json()
+problem
+
+# %% print out the length of all the edges
+for i in range(len(problem['figure']['edges'])):
+    edge = problem['figure']['edges'][i]
+    a = problem['figure']['vertices'][edge[0]]
+    b = problem['figure']['vertices'][edge[1]]
+    print(f"{i}: {dist(a, b)}")
+
 
 # %% post a solution
 solution = {
-    "vertices": [
-        [21, 28],
-        [31, 28],
-        [31, 87],
-        [29, 41],
-        [44, 43],
-        [58, 70],
-        [38, 79],
-        [32, 31],
-        [36, 50],
-        [39, 40],
-        [66, 77],
-        [42, 29],
-        [46, 49],
-        [49, 38],
-        [39, 57],
-        [69, 66],
-        [41, 70],
-        [39, 60],
-        [42, 25],
-        [40, 35],
-    ]
+    "vertices": [[0, 20], [20, 0], [20, 40], [0, 20], [41, 56], [20, 40]],
 }
-r = requests.post(
-    "https://poses.live/api/problems/1/solutions", json=solution, headers=headers
-)
-r.raise_for_status()
-r.text
 
-
-# %% plot all of the line segments on a 2d canvas
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -87,5 +69,64 @@ for i in range(len(edges)):
     v2 = vertices[edges[i][1]]
     plt.plot([v1[0], v2[0]], [v1[1], v2[1]], "r-")
 
+# plot the solution in blue
+if solution['vertices'] is not None:
+    for i in range(len(edges)):
+        v1 = solution['vertices'][edges[i][0]]
+        v2 = solution['vertices'][edges[i][1]]
+        plt.plot([v1[0], v2[0]], [v1[1], v2[1]], "b-")
+
 # flip the y-axis
 plt.gca().invert_yaxis()
+
+
+
+# %%
+# Calculate all the distances between original and final points
+def dist(a, b):
+    return (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2
+
+def ratio(a1, b1, a2, b2):
+    return abs((dist(a2, b2) / dist(a1, b1)) - 1) * 1_000_000
+
+# get all the ratios for all the edges as a list
+def get_ratios(problem, solution):
+    ratios = []
+    for edge in problem['figure']['edges']:
+        r = ratio(problem['figure']['vertices'][edge[0]], problem['figure']['vertices'][edge[1]], solution['vertices'][edge[0]], solution['vertices'][edge[1]])
+        ratios.append(r)
+    return ratios
+
+max_ratio = max(get_ratios(problem, solution))
+assert max_ratio < problem['epsilon'], f'{max_ratio} > {problem["epsilon"]}'
+max_ratio
+
+# %%
+import itertools
+best = None
+best_ratio = None
+possible_points = problem['hole']
+number_of_points = len(figure['vertices'])
+
+# try all possible orderings of the points, drawing with replacement
+for ordering in itertools.product(possible_points, repeat=number_of_points):
+    candidate = {'vertices': list(ordering)}
+    this_ratio = max(get_ratios(problem, candidate))
+    if best is None or this_ratio < best_ratio:
+        best = candidate
+        best_ratio = this_ratio
+print(best_ratio)
+print(best)
+
+# %%
+r = requests.post(
+    "https://poses.live/api/problems/" + str(problem_number) + "/solutions",
+    json=solution,
+    headers=headers
+)
+r.raise_for_status()
+r.text
+
+# %%
+problem
+

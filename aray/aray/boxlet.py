@@ -156,7 +156,6 @@ ax.set_aspect('equal')
 
 cycle = polygon + [polygon[0]]
 ax.plot([c.x for c in cycle], [c.y for c in cycle], 'k:')
-plt.show()
 
 boxlets = Boxlet.partition(polygon)
 print('boxlets', boxlets)
@@ -167,9 +166,9 @@ for boxlet in boxlets:
     ys = [p.y for p in points]
     assert xs, f'no points {boxlet}'
     assert ys, f'no points {boxlet}'
-    plot('xs', xs, 'ys', ys)
-    ax.scatter(xs, ys, s=4)
-    plt.show()
+    print('xs', xs, 'ys', ys)
+    print(ax.scatter(xs, ys, s=6))
+plt.show()
 
 
 # %%

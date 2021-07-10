@@ -106,19 +106,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     match matches.subcommand_name() {
         Some(PARSE_SUBCOMMAND) => {
             info!("Parsing file...");
-            let problem_file_path = if let Some(parse_matches) = matches.subcommand_matches(PARSE_SUBCOMMAND) {
-                if let Some(problem_file_path) = parse_matches.value_of(PARSE_FILE_FLAG) {
-                    problem_file_path
+            let problem_file_path =
+                if let Some(parse_matches) = matches.subcommand_matches(PARSE_SUBCOMMAND) {
+                    if let Some(problem_file_path) = parse_matches.value_of(PARSE_FILE_FLAG) {
+                        problem_file_path
+                    } else {
+                        error!("No problem file was provided.");
+                        print_long_help();
+                        ::std::process::exit(1);
+                    }
                 } else {
-                    error!("No problem file was provided.");
+                    error!("Unknown error occurred.");
                     print_long_help();
                     ::std::process::exit(1);
-                }
-            } else {
-                error!("Unknown error occurred.");
-                print_long_help();
-                ::std::process::exit(1);
-            };
+                };
 
             let file = match std::fs::File::open(problem_file_path) {
                 Ok(file) => file,

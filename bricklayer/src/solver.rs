@@ -24,6 +24,55 @@ pub fn compute_bounded_integer_points(boundary: &Polygon<f32>) -> Vec<Point<f32>
     bounded_integer_points
 }
 
+// #[cfg(test)]
+// #[test]
+// fn test_problem_integer_points() {
+//     use std::io::prelude::*;
+
+//     for i in 1..89 {
+//         let current_dir = std::env::current_dir().unwrap();
+//         let mut problem_file_path = current_dir.clone();
+//         problem_file_path.push(std::path::PathBuf::from(format!("../problems/{}.json", i)));
+//         let problem_file_path = std::fs::canonicalize(problem_file_path).unwrap();
+
+//         let problem_file = match std::fs::File::open(&problem_file_path) {
+//             Ok(file) => file,
+//             Err(err) => {
+//                 panic!("\nFailed to open problem file ({:?}) with error: {}\n", problem_file_path, err);
+//             }
+//         };
+
+//         let mut buf_reader = std::io::BufReader::new(problem_file);
+//         let mut contents = String::new();
+//         buf_reader.read_to_string(&mut contents).expect(&format!("Failed to read JSON file to string: {:?}", problem_file_path));
+
+//         let problem: judge::format::Problem =
+//             serde_json::from_str(&contents).expect("JSON was not well-formatted");
+
+//         let hole_polygon = positions_to_polygon(&problem.hole);
+//         let valid_pose_slots: Vec<Position> = compute_bounded_integer_points(&hole_polygon).iter()
+//             .map(|p| Position {
+//                 x: p.x() as u32,
+//                 y: p.y() as u32,
+//             }).collect();
+
+//         let current_dir = std::env::current_dir().unwrap();
+//         let mut pose_slot_file_path = current_dir.clone();
+//         pose_slot_file_path.push(std::path::PathBuf::from("../valid_hole_slots/"));
+//         let mut pose_slot_file_path = std::fs::canonicalize(pose_slot_file_path).unwrap();
+//         pose_slot_file_path.push(std::path::PathBuf::from(format!("{}.json", i)));
+//         let mut pose_slot_file = match std::fs::File::create(&pose_slot_file_path) {
+//             Ok(file) => file,
+//             Err(err) => {
+//                 panic!("\nFailed to open problem file: {}\n", err);
+//             }
+//         };
+
+//         let json = serde_json::to_string(&valid_pose_slots).expect("Failed to serialize valid points");
+//         pose_slot_file.write_all(&json.as_bytes()).expect("Failed to write valid points to file");
+//     }
+// }
+
 #[cfg(test)]
 #[test]
 fn test_compute_bounded_integer_points() {

@@ -76,28 +76,44 @@ def loss_dislikes(hole: torch.tensor, current: torch.tensor, temperature: float)
     return torch.sum(D * W)
 
 
-def loss_barrier(edges: List[Edge], hole: torch.tensor, current: torch.tensor) -> torch.tensor:
-    # assert hole.shape[-1] == 2, f'{hole.shape}'
-    # assert current.shape[-1] == 2, f'{current.shape}'
-    # assert len(hole.shape) == 2, f'{hole.shape}'
-    # assert len(current.shape) == 2, f'{current.shape}'
-    # assert len(edges) > 0, f'{edges}'
+def loss_barrier(edges: List[Edge], hole: torch.tensor, current: torch.tensor, gamma: float) -> torch.tensor:
+    assert hole.shape[-1] == 2, f'{hole.shape}'
+    assert current.shape[-1] == 2, f'{current.shape}'
+    assert len(hole.shape) == 2, f'{hole.shape}'
+    assert len(current.shape) == 2, f'{current.shape}'
+    assert gamma >= 0, f'{gamma}'
 
-    # # make a list of hole edges to match
-    # hole_edges = list(
-    #     zip(range(len(hole) - 1), range(1, len(hole)))) + [(len(hole) - 1, 0)]
+    # make a list of hole edges to match
+    hole_edges = list(
+        zip(range(len(hole) - 1), range(1, len(hole)))) + [(len(hole) - 1, 0)]
 
-    # # construct this matrix sparsely, and we'll set to 1 everything beyond our limit = 1.0 unit
-    # distances = torch.empty((len(edges), len(current)), dtype=torch.float)
-    # for i, (v1, v2) in enumerate(edges):
-    #     p1 = hole[v1]
-    #     p2 = hole[v2]
-    #     for j, p0 in enumerate(current):
-    #         out = outside(p1, p2, p0)
+    # compute the distance matrix, first current edges, than hole edges
+    curr_matrix = torch.empty(len(edges), len(hole))
+    for i, (v1, v2) in enumerate(edges):
+        for j, h in enumerate(hole):
+            curr_matrix[i, j] = near(current[v1], current[v2], h)
 
-    # # clip the distances to be in -1..0
-    # distances = torch.clamp(distances, -1.0, 0.0)
+    hole_matrix = torch.empty(len(hole_edges), len(current))
+    for i, (v1, v2) in enumerate(hole_edges):
+        for j, c in enumerate(current):
+            hole_matrix[i, j] = near(hole[v1], hole[v2], c)
 
-    # # add the barrier loss
-    # return torch.sum(torch.log(-distances))
-    pass
+    # print('pre clamp curr', curr_matrix)
+    # print('pre clamp hole', hole_matrix)
+
+    # clamp the distances to be between 1e-8 and gamma
+    curr_matrix = torch.clamp(curr_matrix, min=1e-4, max=gamma)
+    hole_matrix = torch.clamp(hole_matrix, min=1e-4, max=gamma)
+
+    # print('post clamp curr', curr_matrix)
+    # print('post clamp hole', hole_matrix)
+
+    # convert the distances to losses, pointwise
+    curr_loss = -torch.log(curr_matrix / gamma)
+    hole_loss = -torch.log(hole_matrix / gamma)
+
+    # print('post log curr', curr_loss)
+    # print('post log hole', hole_loss)
+
+    # sum the losses
+    return torch.sum(curr_loss) + torch.sum(hole_loss)

@@ -3,7 +3,11 @@ import json
 import math
 import os
 import random
+import sys
 import time
+from matplotlib.colors import to_hex
+
+from shapely.geometry import Point, Polygon
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -11,8 +15,25 @@ import numpy as np
 PROBLEM_FILEDIR = "problems"
 SOLUTION_FILEDIR = "solutions"
 
+sys.setrecursionlimit(1000)
+
 def dist(a, b):
     return (a[0]-b[0])**2 + (a[1]-b[1])**2
+
+def plot_hole(hole):
+    xs, ys = zip(*hole)
+    xs = list(xs)
+    ys = list(ys)
+    xs.append(xs[0])
+    ys.append(ys[0])
+    plt.plot(xs,ys,c='b')
+
+def plot_figure(edges, vertices):
+    for edge in edges:
+        a = vertices[edge[0]]
+        b = vertices[edge[1]]
+        xs, ys = zip(a,b)
+        plt.plot(xs, ys,c='r')
 
 class problem():
     def __init__(self, number):
@@ -27,15 +48,28 @@ class hole():
         self.num_vertices = len(vertices)
         self.vertex_cycle = self.vertices + [self.vertices[0]]
         self.edges = list(zip(self.vertex_cycle[:-1], self.vertex_cycle[1:]))
+        self.polygon = Polygon(self.vertices)
 
     def inside(self, point):
-        """Calculate the winding number of the vectors from point to hole's vertices to determine if a point is inside (True) or not."""
-        x, y = point
-        sum_theta = 0
-        for h in self.vertex_cycle:
-            x1, y1 = h
-            sum_theta += math.atan2(y1-y, x1-x)
-        return abs(sum_theta) < math.pi / 2
+        """Checks if point is inside the hole."""
+        if point in self.vertices:
+            return True
+        return self.polygon.contains(Point(point))
+
+    # TODO: Make this work; currently it's not working because the vertices aren't correctly converted to polar coordinates.
+    # def inside(self, point):
+    #     """Calculate the winding number of the vectors from point to hole's vertices to determine if a point is inside (True) or not."""
+    #     x, y = point
+    #     sum_theta = 0
+    #     plt.scatter(x,y,c='k')
+    #     for h in self.vertex_cycle:
+    #         x1, y1 = h
+    #         plt.scatter(x1, y1)
+    #         sum_theta += math.atan2(y1-y, x1-x)
+    #         print(sum_theta)
+    #     plt.legend(self.vertex_cycle)
+    #     plt.show()
+    #     return abs(sum_theta) > math.pi / 4
 
     def dislikes(self, positions):
         """Calculates the minimum distance to a vertex in positions for each vertex in the hole."""
@@ -76,17 +110,24 @@ class figure():
     def begin_search(self, best_sol = None):
         """Begin the search for a solution. If passed best_sol, will return the first solution at least that good."""
         best_result = None
-        for vertex_index in range(self.num_vertices):
-            v_result = search([partial_figure(self, vertex_index, hole_index) for hole_index in range(self.hole.num_vertices)], target=best_sol)
-            if v_result is None:
-                continue
-            if best_sol is not None:
-                if v_result.num_dislikes <= best_sol:
-                    return v_result
-            elif best_result is not None and v_result.num_dislikes < best_result.num_dislikes:
-                best_result = v_result
-            elif best_result is None:
-                best_result = v_result
+        for hole_index in range(self.hole.num_vertices):
+            print(hole_index)
+            for vertex_index in range(self.num_vertices):
+                print(vertex_index, best_result)
+                try:
+                    v_result = search([partial_figure(self, vertex_index, hole_index, to_plot=False)], target=best_sol)
+                    if v_result is None:
+                        continue
+                    if best_sol is not None:
+                        if v_result.sum_dislikes <= best_sol:
+                            return v_result
+                    elif best_result is not None and v_result.sum_dislikes < best_result.sum_dislikes:
+                        best_result = v_result
+                    elif best_result is None:
+                        best_result = v_result
+                except:
+                    print("Error")
+                    continue
         return best_result                
 
 
@@ -105,10 +146,12 @@ def check_line_intersection(line1, line2):
 
 
 def ring_intersection(hole, ca, cb, ed_a, ed_b):
-    """Given two ring centers ca and cb, and two radii ranges ed_a and ed_b, find the integer points that are in both rings.
+    """Given two ring centers ca and cb, and two squared radii ranges ed_a and ed_b, find the integer points that are in both rings.
     
     Begins by finding the quadrilateral of the 'possible region', and then looks for integer points within that region."""
     d = dist(ca, cb)
+    if d == 0:
+        return ring_options(ca, max(ed_a[0], ed_b[0]), min(ed_a[1], ed_b[1]))
     plus = []
     minus = []
     for ra, rb in itertools.product(ed_a, ed_b):
@@ -122,21 +165,21 @@ def ring_intersection(hole, ca, cb, ed_a, ed_b):
         pxs, pys = zip(*flip)
         guesses = list(itertools.product(range(math.ceil(min(pxs)), math.floor(max(pxs))+1),
                                         range(math.ceil(min(pys)), math.floor(max(pys))+1)))
-        guesses = [g for g in guesses if ed_a[0] <= dist(g, ca) <= ed_a[1] and ed_b[0] <= dist(g, cb) <= ed_b[1] and inside_hole(hole, g)]
-        plt.scatter(pxs, pys)
+        guesses = [g for g in guesses if ed_a[0] <= dist(g, ca) <= ed_a[1] and ed_b[0] <= dist(g, cb) <= ed_b[1] and hole.inside(g)]
+        # plt.scatter(pxs, pys)
         if len(guesses) > 0:
             return guesses
     return []
 
 
 def ring_quad_options(r1, r2):
-    """Given two radii, yield all integer lattice points in the first quadrant of that ring."""
-    for x in range(math.floor(r2)):
-        if x > r1:
+    """Given two squared radii, yield all integer lattice points in the first quadrant of that ring."""
+    for x in range(math.floor(math.sqrt(r2))):
+        if x ** 2 > r1:
             min_y1 = 0
         else:
-            min_y1 = math.ceil(math.sqrt(r1**2 - x**2))
-        max_y2 = math.floor(math.sqrt(r2**2 - x**2))
+            min_y1 = math.ceil(math.sqrt(r1 - x**2))
+        max_y2 = math.floor(math.sqrt(r2 - x**2))
         for y in range(min_y1, max_y2+1):
             yield (x, y)
 
@@ -157,7 +200,7 @@ def ring_options(center, r1, r2):
 
 
 class partial_figure():
-    def __init__(self, figure, vertex_index, hole_index):
+    def __init__(self, figure, vertex_index = None, hole_index = None, to_plot = False):
         self.figure = figure
         self.adjacency = figure.adjacency
         self.adj_dists = figure.adj_dists
@@ -165,7 +208,9 @@ class partial_figure():
         self.to_extend = []
         self.extended = []
         self.dislikes = [0 for _ in range(self.figure.hole.num_vertices)]
-        self.begin(vertex_index, hole_index)
+        if vertex_index is not None and hole_index is not None:
+            self.begin(vertex_index, hole_index)
+        self.plot = to_plot
 
     @property
     def sum_dislikes(self):
@@ -181,25 +226,25 @@ class partial_figure():
                 dee = dist(next_pos, edge_pos)
                 if dee < self.adj_dists[vertex_index, edge][0] or dee > self.adj_dists[vertex_index, edge][1]:
                     return False
-                for hedge in self.hole.edges:
+                for hedge in self.figure.hole.edges:
                     if check_line_intersection([next_pos, edge_pos], hedge):
                         return False 
         return True
 
     def valid_full(self):
         """Return True iff the figure is valid. This checks the validity of the whole figure."""
-        for vertex in self.figure.vertices:
+        for vertex in self.vertices:
             if not self.figure.hole.inside(vertex):
                 return False
         for edge in self.figure.edges:
-            edge0 = self.vertices[edge[0]]
-            edge1 = self.vertices[edge[1]]
+            edge0 = tuple(self.vertices[edge[0]])
+            edge1 = tuple(self.vertices[edge[1]])
             if edge0 is None or edge1 is None:
                 return False
             dee = dist(edge0, edge1)
-            if dee < self.adj_dists[edge0, edge1][0] or dee > self.adj_dists[edge0, edge1][1]:
+            if dee < self.adj_dists[(edge[0], edge[1])][0] or dee > self.adj_dists[(edge[0], edge[1])][1]:
                 return False
-            for hedge in self.hole.edges:
+            for hedge in self.figure.hole.edges:
                 if check_line_intersection([edge0, edge1], hedge):
                     return False 
         return True
@@ -245,14 +290,24 @@ class partial_figure():
                     candidates = new_candidates
             return list(candidates)
 
+
     def copy_with(self, next_vertex, next_pos):
         """Return a copy of self, extended by the next vertex at next_pos."""
         if not self.valid(next_vertex, next_pos):
             return None
-        novel = self.copy()
+        novel = partial_figure(self.figure)
+        novel.vertices = self.vertices.copy()
         novel.vertices[next_vertex] = next_pos
-        novel.to_extend.extend([v for v in self.adjacency[next_vertex] if v not in self.extended])
-        novel.dislikes = [min(a,b) for a,b in zip(novel.dislikes, self.plot.dislikes([next_pos]))]
+        novel.to_extend = self.to_extend + [v for v in self.adjacency[next_vertex] if v not in self.extended]
+        novel.extended = self.extended.copy()
+        novel.dislikes = [min(a,b) for a,b in zip(novel.dislikes, self.figure.hole.dislikes([next_pos]))]
+        if self.plot:
+            plot_hole(self.figure.hole.vertices)
+            pruned_edges = [e for e in self.figure.edges if e[0] in novel.extended and e[1] in novel.extended]
+            plot_figure(pruned_edges, novel.vertices)
+            plt.scatter(next_pos[0], next_pos[1], c='m')
+            plt.title(str(next_pos))
+            plt.show()
         return novel
 
 def search(candidates: list, finished=None, target=None):
@@ -266,6 +321,8 @@ def search(candidates: list, finished=None, target=None):
     next_expansion = candidates.pop(0)
     expansion = next_expansion.expand()
     new_candidates = []
+    if expansion is None:
+        return None
     for e in expansion:
         if e is None:
             continue
@@ -281,11 +338,11 @@ def search(candidates: list, finished=None, target=None):
     new_candidates = candidates + new_candidates
     if len(new_candidates) == 0: 
         return finished
-    return search(new_candidates, finished, target)    
+    return search(new_candidates, finished, target)
 
 
 if __name__ == "__main__":
-    number = 20
+    number = 24
     p = problem(number)
     result = p.figure.begin_search(best_sol=0)
     if result is None:

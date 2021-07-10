@@ -109,27 +109,13 @@ class figure():
 
     def begin_search(self, best_sol = None):
         """Begin the search for a solution. If passed best_sol, will return the first solution at least that good."""
-        best_result = None
+        initial_candidates = []
         for hole_index in range(self.hole.num_vertices):
-            print(hole_index)
             for vertex_index in range(self.num_vertices):
-                print(vertex_index, best_result)
-                try:
-                    v_result = search([partial_figure(self, vertex_index, hole_index, to_plot=False)], target=best_sol)
-                    if v_result is None:
-                        continue
-                    if best_sol is not None:
-                        if v_result.sum_dislikes <= best_sol:
-                            return v_result
-                    elif best_result is not None and v_result.sum_dislikes < best_result.sum_dislikes:
-                        best_result = v_result
-                    elif best_result is None:
-                        best_result = v_result
-                except:
-                    print("Error")
-                    continue
-        return best_result                
-
+                initial_candidates.append(partial_figure(self, vertex_index, hole_index, to_plot=False))
+        print("ic:", len(initial_candidates))
+        result = search(initial_candidates, target=best_sol)
+        return result
 
 def check_line_intersection(line1, line2):
     """Given two line segments (each defined by two (x,y) pairs), return true if the two segments intersect and false if they do not."""
@@ -260,11 +246,15 @@ class partial_figure():
     def expand(self):
         """Return a list of partial figures or placeholder partial figures, each of which has been extended by the next edge removed from to_extend."""
         next_vertex = self.to_extend.pop(0)
+        while next_vertex in self.to_extend:
+            self.to_extend.remove(next_vertex)
         self.extended.append(next_vertex)
         return_list = []
         for next_pos in self.options(next_vertex):
             if next_pos is not None:
-                return_list.append(self.copy_with(next_vertex, next_pos))
+                potential = self.copy_with(next_vertex, next_pos)
+                if potential is not None:
+                    return_list.append(potential)
         if len(return_list) > 0:
             return return_list
         else:
@@ -310,39 +300,49 @@ class partial_figure():
             plt.show()
         return novel
 
-def search(candidates: list, finished=None, target=None):
+def search(candidates: list, finished=None, target=None, num_iters=0):
     """search takes a list of candidates, picks a candidate to expand, and expands it. If it finds a valid solution with at most target dislikes, it returns it; otherwise it concludes the search before returning the best."""
     # TODO: Because the search is recursive, it won't check whether it has found a candidate that another branch has also found.
+    if num_iters % 100 == 0:
+        print(num_iters)
+    print('lc:', len(candidates))
     if len(candidates) == 0:
         return None
     candidates.sort(key = lambda x: x.dislikes)
+    print('lc2:', len(candidates))
     if target is not None and candidates[0].to_extend == [] and sum(candidates[0].dislikes) <= target:
         return candidates[0]
     next_expansion = candidates.pop(0)
     expansion = next_expansion.expand()
+    print(expansion)
     new_candidates = []
-    if expansion is None:
-        return None
-    for e in expansion:
-        if e is None:
-            continue
-        if e.to_extend == [] and e.valid_full():
-            if finished is None:
-                finished = e
-            elif e.sum_dislikes <= finished.sum_dislikes:
-                finished = e
-        elif e.to_extend != [] and e not in candidates:
-            new_candidates.append(e)
-    if finished is not None and finished.sum_dislikes <= target:
-        return finished
+    if expansion is not None:
+        for e in expansion:
+            print(e.to_extend, e.dislikes)
+            if e.to_extend == [] and e.valid_full():
+                print('brach one')
+                if finished is None:
+                    finished = e
+                elif e.sum_dislikes <= finished.sum_dislikes:
+                    finished = e
+            elif e.to_extend != [] and e not in candidates:
+                print('brach two')
+                new_candidates.append(e)
+            else:
+                print('brach three')
+        if finished is not None:
+            print("finished: ", finished.sum_dislikes)
+            if finished.sum_dislikes <= target:
+                return finished
     new_candidates = candidates + new_candidates
+    print("nc:",len(new_candidates))
     if len(new_candidates) == 0: 
         return finished
-    return search(new_candidates, finished, target)
+    return search(new_candidates, finished, target, num_iters=num_iters+1)
 
 
 if __name__ == "__main__":
-    number = 24
+    number = 11
     p = problem(number)
     result = p.figure.begin_search(best_sol=0)
     if result is None:

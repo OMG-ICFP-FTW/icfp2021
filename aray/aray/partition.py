@@ -17,7 +17,6 @@ def partition(points: List[Point]):
     """ Partition a simple polygon into a list of Quads """
     quads = []  # list we will fill with quads and return
     xs = sorted(set(p.x for p in points))
-    print('xs', xs)
     # Get all our y points for each x
     left_xy = defaultdict(list)  # map [x] -> left_ys
     right_xy = defaultdict(list)  # map [x] -> right_ys
@@ -55,10 +54,7 @@ def partition(points: List[Point]):
         # Create a quad for each pair of ys in order
         left_ys = sorted(left_xy[xmin])
         right_ys = sorted(right_xy[xmax])
-        print('left ys', left_ys)
-        print('right ys', right_ys)
         ys = list(zip(left_ys, right_ys))
-        print('ys', ys)
         assert len(ys) % 2 == 0, f'odd number of y values, {points}\n{ys}\n{(xmin,xmax)}'
         for j in range(0, len(ys) - 1, 2):
             bottom_left = Point(xmin, ys[j][0])

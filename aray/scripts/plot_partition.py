@@ -48,7 +48,7 @@ def plot_quad(quad, ax):
 
 
 quads = partition(polygon)
-print('quads', quads)
+# print('quads', quads)
 for quad in quads:
-    print('plotting quad', quad)
+    # print('plotting quad', quad)
     plot_quad(quad, ax)

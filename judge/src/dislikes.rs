@@ -1,23 +1,23 @@
-/// [Competition Requirements](https://icfpcontest2021.github.io/spec-v1.1.pdf):
-/// A. If line segments connect in the original figure, they must also connect in the assumed
-///     pose. The list of connections is explicitly indicated in the problem.
-/// B. Edges cannot be compressed or stretched arbitrarily. The amount that an edge can be
-///     stretched depends on the original edge length. We define the squared distance d in between
-///     two points p and q as: d(p, q) = (p_x − q_x)^2 + (p_y − q_y)^2
+/// # [Competition Requirements](https://icfpcontest2021.github.io/spec-v1.1.pdf):
+/// # A. If line segments connect in the original figure, they must also connect in the assumed
+/// #     pose. The list of connections is explicitly indicated in the problem.
+/// # B. Edges cannot be compressed or stretched arbitrarily. The amount that an edge can be
+/// #     stretched depends on the original edge length. We define the squared distance d in between
+/// #     two points p and q as: d(p, q) = (p_x − q_x)^2 + (p_y − q_y)^2
 ///
-///     Let’s assume an edge between vertices v_i and v_j exists in the original figure, and v'_i
-///     and v'_j are the new positions of these points in the assumed pose. We then require that
-///     the ratio between the two squared lengths is at most ε/1,000,000 away from 1:
+/// #     Let’s assume an edge between vertices v_i and v_j exists in the original figure, and v'_i
+/// #     and v'_j are the new positions of these points in the assumed pose. We then require that
+/// #     the ratio between the two squared lengths is at most ε/1,000,000 away from 1:
 ///
-///         (d(v'_i, v'_j) / d(v_i v_j)) − 1 ≤ ε/1,000,000
+/// #         (d(v'_i, v'_j) / d(v_i v_j)) − 1 ≤ ε/1,000,000
 ///
-///     ε is an integer specified per problem
+/// #     ε is an integer specified per problem
 ///
-/// Furthermore, if a pose is to be considered by the judges, the figure must of course fit in the
-/// hole once the figure assumes the pose.
+/// # Furthermore, if a pose is to be considered by the judges, the figure must of course fit in the
+/// # hole once the figure assumes the pose.
 ///
-/// C. Every point located on any line segment of the figure in the assumed pose must either lay
-///     inside the hole, or on its boundary.
+/// # C. Every point located on any line segment of the figure in the assumed pose must either lay
+/// #     inside the hole, or on its boundary.
 use crate::format::*;
 
 pub struct RawEdge {

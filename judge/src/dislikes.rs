@@ -246,3 +246,18 @@ pub fn figure_is_valid(problem: &Problem, solution: &Solution) -> Result<(), Str
         ))
     }
 }
+
+pub fn compute_dislikes(problem: &Problem, solution: &Solution) -> Result<u32, String> {
+    let mut dislikes = 0.0;
+    for hole_vertex in &problem.hole {
+        let mut min_distance = f32::MAX;
+        for pose_vertex in &solution.vertices {
+            let new_distance = distance(hole_vertex, pose_vertex);
+            if new_distance < min_distance {
+                min_distance = new_distance
+            }
+        }
+        dislikes += min_distance
+    }
+    Ok(dislikes as u32)
+}

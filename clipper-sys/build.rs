@@ -21,7 +21,7 @@ fn main() {
             target_env.as_str()
         ),
     }
-    
+
     #[cfg(feature = "generate-bindings")]
     generate_bindings();
 }

@@ -1,9 +1,9 @@
-use std::collections::{BTreeSet, BTreeMap};
+use std::collections::{BTreeMap, BTreeSet};
 
 use log::{error, info};
 
-use geo::{Point, Polygon, polygon};
-use judge::format::{Position, Problem, Solution, Figure};
+use geo::{polygon, Point, Polygon};
+use judge::format::{Figure, Position, Problem, Solution};
 
 pub fn compute_bounded_integer_points(boundary: &Polygon<u32>) -> Vec<Point<u32>> {
     panic!("Not yet implemented")
@@ -70,7 +70,7 @@ impl WaveImage {
 }
 
 struct PartialPose {
-    pub vertices: BTreeSet<VertexId>
+    pub vertices: BTreeSet<VertexId>,
 }
 
 impl PartialPose {
@@ -78,9 +78,7 @@ impl PartialPose {
         let mut vertices = BTreeSet::new();
         vertices.insert(root);
 
-        PartialPose {
-            vertices
-        }
+        PartialPose { vertices }
     }
 
     fn add(&mut self, edge: (VertexId, VertexId)) -> Result<(), String> {
@@ -97,11 +95,11 @@ impl PartialPose {
 }
 
 pub fn solve(problem: &Problem) -> Result<Solution, String> {
-
     let hole_polygon = positions_to_polygon(&problem.hole);
     let valid_pose_slots = compute_bounded_integer_points(&hole_polygon);
 
-    let mut possibilities = WaveFunction::from_figure_and_lattice(&valid_pose_slots, &problem.figure);
+    let mut possibilities =
+        WaveFunction::from_figure_and_lattice(&valid_pose_slots, &problem.figure);
     let mut image_stack = vec![possibilities.take_image()];
     for pose_vertex_index in 0..problem.figure.vertices.len() {
         let root = VertexId(pose_vertex_index as u8);
@@ -109,17 +107,21 @@ pub fn solve(problem: &Problem) -> Result<Solution, String> {
         let mut solution = PartialPose::new(root);
         loop {
             let mut current_image = image_stack.pop().unwrap();
-            let candidates =  current_image.get_min_entropy_extensions(&solution);
+            let candidates = current_image.get_min_entropy_extensions(&solution);
             // We've exhausted this search avenue...
             if candidates.is_empty() {
                 if solution.vertices.len() == problem.figure.vertices.len() {
                     //  1) We've succeeded
                     // TODO(akesling): Continue finding other solutions instead of bailing early.
                     return Ok(Solution {
-                        vertices: solution.vertices.iter().map(|vert_index| -> Position {
-                            problem.figure.vertices[vert_index.0 as usize].clone()
-                        }).collect()
-                    })
+                        vertices: solution
+                            .vertices
+                            .iter()
+                            .map(|vert_index| -> Position {
+                                problem.figure.vertices[vert_index.0 as usize].clone()
+                            })
+                            .collect(),
+                    });
                 }
 
                 if solution.vertices.len() == 1 {
@@ -131,13 +133,13 @@ pub fn solve(problem: &Problem) -> Result<Solution, String> {
 
             let new_edge = solution.get_remainder(candidates[0]);
             match solution.add_if_valid(new_edge) {
-                Ok(Some(())) => {
-
-                },
-                Ok(None) => {
-                }
+                Ok(Some(())) => {}
+                Ok(None) => {}
                 Err(err) => {
-                    error!("An error occurred {:?} adding edge to candidate solution.", err)
+                    error!(
+                        "An error occurred {:?} adding edge to candidate solution.",
+                        err
+                    )
                 }
             }
             image_stack.push(current_image);

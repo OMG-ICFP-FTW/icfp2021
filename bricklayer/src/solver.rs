@@ -43,7 +43,7 @@ impl WaveFunction {
         panic!("Not yet implemented.")
     }
 
-    fn collapse_from_image(image: &WaveImage) -> Result<(), String> {
+    fn remove_derivative_images(&mut self, image: &WaveImage) -> Result<(), String> {
         panic!("Not yet implemented.")
     }
 
@@ -56,7 +56,7 @@ struct WaveImage {
     // TODO(akesling): Implement
 }
 
-#[derive(PartialOrd, Ord, PartialEq, Eq)]
+#[derive(PartialOrd, Ord, PartialEq, Eq, Copy, Clone)]
 struct VertexId(u8);
 
 impl WaveImage {
@@ -64,7 +64,11 @@ impl WaveImage {
         panic!("Not yet implemented.")
     }
 
-    fn get_min_entropy_extensions(&self, existing: &PartialPose) -> Vec<&Vec<VertexId>> {
+    fn get_min_entropy_extensions(&self, query: &PartialPose) -> Vec<Vec<VertexId>> {
+        panic!("Not yet implemented.")
+    }
+
+    fn remove_derivative_images(&self, context: &PartialPose, extension: (VertexId, VertexId)) {
         panic!("Not yet implemented.")
     }
 }
@@ -94,26 +98,26 @@ impl PartialPose {
     }
 }
 
-pub fn solve(problem: &Problem) -> Result<Solution, String> {
+pub fn solve(problem: &Problem) -> Result<Option<Solution>, String> {
     let hole_polygon = positions_to_polygon(&problem.hole);
     let valid_pose_slots = compute_bounded_integer_points(&hole_polygon);
 
     let mut possibilities =
         WaveFunction::from_figure_and_lattice(&valid_pose_slots, &problem.figure);
-    let mut image_stack = vec![possibilities.take_image()];
     for pose_vertex_index in 0..problem.figure.vertices.len() {
         let root = VertexId(pose_vertex_index as u8);
+        let mut image_stack = vec![possibilities.take_image()];
 
         let mut solution = PartialPose::new(root);
         loop {
             let mut current_image = image_stack.pop().unwrap();
             let candidates = current_image.get_min_entropy_extensions(&solution);
-            // We've exhausted this search avenue...
             if candidates.is_empty() {
+                // We've exhausted this search avenue and so...
                 if solution.vertices.len() == problem.figure.vertices.len() {
                     //  1) We've succeeded
                     // TODO(akesling): Continue finding other solutions instead of bailing early.
-                    return Ok(Solution {
+                    return Ok(Some(Solution {
                         vertices: solution
                             .vertices
                             .iter()
@@ -121,31 +125,47 @@ pub fn solve(problem: &Problem) -> Result<Solution, String> {
                                 problem.figure.vertices[vert_index.0 as usize].clone()
                             })
                             .collect(),
-                    });
-                }
-
-                if solution.vertices.len() == 1 {
+                    }));
+                } else if solution.vertices.len() == 1 {
                     //  2) We've exhausted this root
+                    possibilities.remove_derivative_images(&current_image);
+                    while !image_stack.is_empty() {
+                        possibilities.remove_derivative_images(&image_stack.pop().unwrap());
+                    }
+                    break;
+                } else {
+                    //  3) Back track
+                    possibilities.remove_derivative_images(&current_image);
+                    continue;
                 }
-                //  3) Back track
-                break;
             }
 
-            let new_edge = solution.get_remainder(candidates[0]);
-            match solution.add_if_valid(new_edge) {
-                Ok(Some(())) => {}
-                Ok(None) => {}
+            let new_path = &candidates[0];
+            let new_edge = solution.get_remainder(new_path);
+            match solution.add_if_valid(new_edge.clone()) {
+                Ok(Some(())) => {
+                    // Success!! We must go deeper....
+                    let next_image = current_image.collapse(new_path);
+                    image_stack.push(current_image);
+                    image_stack.push(next_image);
+                    continue;
+                }
+                Ok(None) => {
+                    // Whoops, let's try this again.
+                    current_image.remove_derivative_images(&solution, new_edge);
+                    image_stack.push(current_image);
+                    continue;
+                }
                 Err(err) => {
                     error!(
                         "An error occurred {:?} adding edge to candidate solution.",
                         err
-                    )
+                    );
+                    break;
                 }
             }
-            image_stack.push(current_image);
-            break;
         }
     }
 
-    panic!("Not yet implemented")
+    Ok(None)
 }

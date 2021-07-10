@@ -6,10 +6,13 @@ import os
 import json
 from dataclasses import dataclass, fields
 from typing import List
+from collections import namedtuple
 
+Point = namedtuple('Point', ['x', 'y'])
+Edge = namedtuple('Edge', ['a', 'b'])
 
-# https://stackoverflow.com/a/54769644
 def dataclass_from_dict(cls, d):
+    """ Recursive dataclass builder """
     try:
         fieldtypes = {f.name:f.type for f in fields(cls)}
         return cls(**{f:dataclass_from_dict(fieldtypes[f],d[f]) for f in d})
@@ -20,18 +23,6 @@ def dataclass_from_dict(cls, d):
 # Path of 'icfp2021' directory
 BASE_PATH = base = os.path.dirname(os.path.dirname(
     os.path.dirname(os.path.realpath(__file__))))
-
-
-@dataclass
-class Point:
-    x: int
-    y: int
-
-
-@dataclass
-class Edge:
-    v1: int
-    v2: int
 
 
 @dataclass

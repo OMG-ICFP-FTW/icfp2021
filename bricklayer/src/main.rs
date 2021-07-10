@@ -4,6 +4,8 @@ use log::{error, info};
 use log::{Level, Metadata, Record};
 use log::{LevelFilter, SetLoggerError};
 
+mod solver;
+
 static LOGGER: SimpleLogger = SimpleLogger;
 
 const RELEASE_VERSION: &str = env!("CARGO_PKG_VERSION");

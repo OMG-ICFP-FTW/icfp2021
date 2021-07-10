@@ -98,22 +98,13 @@ def loss_barrier(edges: List[Edge], hole: torch.tensor, current: torch.tensor, g
         for j, c in enumerate(current):
             hole_matrix[i, j] = near(hole[v1], hole[v2], c)
 
-    # print('pre clamp curr', curr_matrix)
-    # print('pre clamp hole', hole_matrix)
-
     # clamp the distances to be between 1e-8 and gamma
     curr_matrix = torch.clamp(curr_matrix, min=1e-4, max=gamma)
     hole_matrix = torch.clamp(hole_matrix, min=1e-4, max=gamma)
 
-    # print('post clamp curr', curr_matrix)
-    # print('post clamp hole', hole_matrix)
-
     # convert the distances to losses, pointwise
     curr_loss = -torch.log(curr_matrix / gamma)
     hole_loss = -torch.log(hole_matrix / gamma)
-
-    # print('post log curr', curr_loss)
-    # print('post log hole', hole_loss)
 
     # sum the losses
     return torch.sum(curr_loss) + torch.sum(hole_loss)

@@ -56,6 +56,7 @@ struct WaveImage {
     // TODO(akesling): Implement
 }
 
+#[derive(PartialOrd, Ord, PartialEq, Eq)]
 struct VertexId(u8);
 
 impl WaveImage {
@@ -63,24 +64,30 @@ impl WaveImage {
         panic!("Not yet implemented.")
     }
 
-    fn get_min_entropy_paths(&self) -> Vec<&Vec<VertexId>> {
+    fn get_min_entropy_extensions(&self, existing: &PartialPose) -> Vec<&Vec<VertexId>> {
         panic!("Not yet implemented.")
     }
 }
 
 struct PartialPose {
+    pub vertices: BTreeSet<VertexId>
 }
 
 impl PartialPose {
     fn new(root: VertexId) -> PartialPose {
-        PartialPose{}
+        let mut vertices = BTreeSet::new();
+        vertices.insert(root);
+
+        PartialPose {
+            vertices
+        }
     }
 
-    fn add(edge: (VertexId, VertexId)) -> Result<(), String> {
+    fn add(&mut self, edge: (VertexId, VertexId)) -> Result<(), String> {
         panic!("Not yet implemented.")
     }
 
-    fn add_if_valid(edge: (VertexId, VertexId)) -> Result<Option<()>, String> {
+    fn add_if_valid(&mut self, edge: (VertexId, VertexId)) -> Result<Option<()>, String> {
         panic!("Not yet implemented.")
     }
 
@@ -102,13 +109,36 @@ pub fn solve(problem: &Problem) -> Result<Solution, String> {
         let mut solution = PartialPose::new(root);
         loop {
             let mut current_image = image_stack.pop().unwrap();
-            let candidates =  current_image.get_min_entropy_paths();
+            let candidates =  current_image.get_min_entropy_extensions(&solution);
+            // We've exhausted this search avenue...
             if candidates.is_empty() {
+                if solution.vertices.len() == problem.figure.vertices.len() {
+                    //  1) We've succeeded
+                    // TODO(akesling): Continue finding other solutions instead of bailing early.
+                    return Ok(Solution {
+                        vertices: solution.vertices.iter().map(|vert_index| -> Position {
+                            problem.figure.vertices[vert_index.0 as usize].clone()
+                        }).collect()
+                    })
+                }
+
+                if solution.vertices.len() == 1 {
+                    //  2) We've exhausted this root
+                }
+                //  3) Back track
                 break;
             }
 
             let new_edge = solution.get_remainder(candidates[0]);
-            if let Err(err) = solution.add_if_valid(new_edge) {
+            match solution.add_if_valid(new_edge) {
+                Ok(Some(())) => {
+
+                },
+                Ok(None) => {
+                }
+                Err(err) => {
+                    error!("An error occurred {:?} adding edge to candidate solution.", err)
+                }
             }
             image_stack.push(current_image);
             break;

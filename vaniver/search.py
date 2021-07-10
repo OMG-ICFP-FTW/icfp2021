@@ -1,14 +1,18 @@
 import json
 import math
 import os
+import random
 
 import numpy as np
+
+PROBLEM_FILEDIR = "problems"
+SOLUTION_FILEDIR = "solutions"
 
 def dist(a, b):
     return (a[0]-b[0])**2 + (a[1]-b[1])**2
 
 class hole():
-    def __init__(self, vertices) -> None:
+    def __init__(self, vertices):
         self.vertices = vertices
         self.vertex_cycle = self.vertices + [self.vertices[0]]
         self.edges = list(zip(self.vertex_cycle[:-1], self.vertex_cycle[1:]))
@@ -46,8 +50,7 @@ class pose():
         self.dislikes = self.calc_dislikes()
 
     def check_valid(self):
-        """Determines whether the figure fits within the hole.
-        Currently doesn't ensure that edges are inside the hole."""
+        """Determines whether the figure fits within the hole. Checks both vertices and edges."""
         for edge in self.figure.edges:
             edge1 = self.figure.vertices[edge[0]]
             edge2 = self.figure.vertices[edge[1]]
@@ -63,6 +66,9 @@ class pose():
     def calc_dislikes(self):
         return self.hole.calc_dislikes(self.figure.vertices)
 
+    def move(self, vertex, x, y):
+        """Move a single point by x,y, then recheck validity. """
+
 def check_line_intersection(line1, line2):
     """Given two line segments (each defined by two (x,y) pairs), return true if the two segments intersect and false if they do not."""
     x1, y1 = line1[0]
@@ -77,10 +83,57 @@ def check_line_intersection(line1, line2):
     return 0 <= ua <= 1 and 0 <= ub <= 1
 
 
-# problems = {}
-# filedir = "problems"
-# for filename in os.listdir(filedir):
-#     problems[int(filename.split(".")[0])] = json.load(open(os.path.join(filedir,filename)))
-# for p in problems.values():
-#     h = hole(p["hole"])
-#     print(h.inside([0,0]))
+class problem():
+    def __init__(self, number):
+        json_state = json.load(os.path.join(PROBLEM_FILEDIR, str(number) + ".json"))
+        self.number = number
+        self.hole = hole(json_state["hole"])
+        self.figure = figure(json_state)
+        self.initial_pose = pose(self.hole, self.figure)
+        self.current_pose = self.initial_pose
+
+class search():
+    def __init__(self, problem, neighborhoods, random_nbhd = 0.5):
+        """Sets up a search. random_nbhd is the percentage of times a random neighborhood is picked, rather than the best one."""
+        self.problem = problem
+        self.current_pose = self.problem.initial_pose
+        self.best_pose = self.current_pose
+        self.valid = self.problem.initial_pose.valid
+        self.neighborhoods = {n: (1,2) for n in neighborhoods}
+        self.random_nbhd = random_nbhd
+
+    def pick_neighborhood(self):
+        """Pick a neighborhood function from the list of neighborhoods."""
+        if random.rand() < self.random_nbhd:
+            return random.choice(self.problem.neighborhoods.keys())
+        best_nbrhd = (None, (0, 1))
+        for nbrhd in self.neighborhoods.items():
+            if nbrhd[1][0] / nbrhd[1][0] > best_nbrhd[1][0] / best_nbrhd[1][0]:
+                best_nbrhd = nbrhd
+        self.neighborhoods[best_nbrhd[0]][1][0] += 1
+        return best_nbrhd[0]
+
+    def step(self):
+        """Takes a step from the current pose."""
+        step_fn = self.pick_neighborhood()
+        new_pose = step_fn(self.current_pose)
+        if new_pose.valid and not self.valid:
+            self.valid = True
+            self.best_pose = new_pose
+            step_fn
+            self.neighborhoods[step_fn][1] += 1
+        elif new_pose.valid:
+            if new_pose.dislikes < self.best_pose.dislikes:
+                self.best_pose = new_pose
+                self.neighborhoods[step_fn][1] += 1
+        elif new_pose.dislikes < self.best_pose.dislikes:
+            self.best_pose = new_pose
+            self.neighborhoods[step_fn][1] += 1
+
+def main():
+    """Main function."""
+    for i in range(1, 78):
+        if any([i in x for x in os.listdir(SOLUTION_FILEDIR)]):
+            continue
+        problem = problem(i)
+        search(problem, {})

@@ -21,8 +21,6 @@ matrix = torch.tensor([[d(x, y) for x in x_values] for y in y_values])
 matrix
 
 # %%
-matrix.shape
-# %%
 fig, ax = plt.subplots()
 
 # color scale from matrix min to matrix max

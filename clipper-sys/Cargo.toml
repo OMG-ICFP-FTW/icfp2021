@@ -1,0 +1,19 @@
+[package]
+name = "clipper-sys"
+version = "0.4.0"
+authors = ["Gérald Lelong <gerald.lelong@easymov.fr>"]
+edition = "2018"
+license = "ISC"
+readme = "README.md"
+repository = "https://github.com/lelongg/clipper-sys"
+documentation = "https://docs.rs/clipper-sys/"
+description = "Boolean operations on polygons (Clipper wrapper)"
+keywords = ["polygon", "boolean", "clip", "clipper"]
+categories = ["algorithms", "external-ffi-bindings"]
+
+[features]
+generate-bindings = [ "bindgen"]
+
+[build-dependencies]
+bindgen = { version = "0.58.1", optional = true }
+cc = "1.0.59"

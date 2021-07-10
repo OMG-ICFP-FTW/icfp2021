@@ -2,6 +2,7 @@
 
 members = [
     "judge",
+    "bricklayer",
     "clipper-sys",
 ]
 

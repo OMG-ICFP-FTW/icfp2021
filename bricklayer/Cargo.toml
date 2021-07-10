@@ -1,15 +1,9 @@
 [package]
-name = "judge"
+name = "bricklayer"
 version = "0.1.0"
 edition = "2018"
 
-[lib]
-name = "judge"
-path = "src/lib.rs"
-
-[[bin]]
-name = "judge"
-path = "src/bin/main.rs"
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
@@ -19,3 +13,4 @@ log = "0.4"
 geo = "0.18.0"
 geo-offset = "0.3.0"
 geo-clipper = "0.6.0"
+judge = { path = "../judge" }

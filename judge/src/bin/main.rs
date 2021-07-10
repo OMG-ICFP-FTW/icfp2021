@@ -4,9 +4,6 @@ use log::{error, info};
 use log::{Level, Metadata, Record};
 use log::{LevelFilter, SetLoggerError};
 
-mod dislikes;
-mod format;
-
 static LOGGER: SimpleLogger = SimpleLogger;
 
 const RELEASE_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -136,7 +133,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let mut contents = String::new();
             buf_reader.read_to_string(&mut contents)?;
 
-            let problem: format::Problem =
+            let problem: judge::format::Problem =
                 serde_json::from_str(&contents).expect("JSON was not well-formatted");
             println!("{:?}", problem);
 
@@ -194,18 +191,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let mut problem_buf_reader = std::io::BufReader::new(problem_file);
             let mut problem_contents = String::new();
             problem_buf_reader.read_to_string(&mut problem_contents)?;
-            let problem: format::Problem =
+            let problem: judge::format::Problem =
                 serde_json::from_str(&problem_contents).expect("JSON was not well-formatted");
 
             let mut solution_buf_reader = std::io::BufReader::new(solution_file);
             let mut solution_contents = String::new();
             solution_buf_reader.read_to_string(&mut solution_contents)?;
-            let solution: format::Solution =
+            let solution: judge::format::Solution =
                 serde_json::from_str(&solution_contents).expect("JSON was not well-formatted");
 
             println!(
                 "Solution validity: {:?}",
-                dislikes::figure_is_valid(&problem, &solution)
+                judge::dislikes::figure_is_valid(&problem, &solution)
             );
 
             Ok(())
@@ -262,18 +259,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let mut problem_buf_reader = std::io::BufReader::new(problem_file);
             let mut problem_contents = String::new();
             problem_buf_reader.read_to_string(&mut problem_contents)?;
-            let problem: format::Problem =
+            let problem: judge::format::Problem =
                 serde_json::from_str(&problem_contents).expect("JSON was not well-formatted");
 
             let mut solution_buf_reader = std::io::BufReader::new(solution_file);
             let mut solution_contents = String::new();
             solution_buf_reader.read_to_string(&mut solution_contents)?;
-            let solution: format::Solution =
+            let solution: judge::format::Solution =
                 serde_json::from_str(&solution_contents).expect("JSON was not well-formatted");
 
             println!(
                 "Total dislikes: {:?}",
-                dislikes::compute_dislikes(&problem, &solution)
+                judge::dislikes::compute_dislikes(&problem, &solution)
             );
 
             Ok(())

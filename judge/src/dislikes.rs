@@ -38,17 +38,51 @@ impl RawEdge {
 #[cfg(test)]
 #[test]
 fn test_raw_edge_distance() {
-    assert_eq!(RawEdge {start: Position {x: 0, y:0}, end: Position {x: 1, y: 0}}.distance(), 1.0);
-    assert_eq!(RawEdge {start: Position {x: 0, y:0}, end: Position {x: 0, y: 1}}.distance(), 1.0);
-    assert_eq!(RawEdge {start: Position {x: 0, y:0}, end: Position {x: 0, y: 2}}.distance(), 4.0);
-    assert_eq!(RawEdge {start: Position {x: 1, y:1}, end: Position {x: 4, y: 5}}.distance(), 25.0);
+    assert_eq!(
+        RawEdge {
+            start: Position { x: 0, y: 0 },
+            end: Position { x: 1, y: 0 }
+        }
+        .distance(),
+        1.0
+    );
+    assert_eq!(
+        RawEdge {
+            start: Position { x: 0, y: 0 },
+            end: Position { x: 0, y: 1 }
+        }
+        .distance(),
+        1.0
+    );
+    assert_eq!(
+        RawEdge {
+            start: Position { x: 0, y: 0 },
+            end: Position { x: 0, y: 2 }
+        }
+        .distance(),
+        4.0
+    );
+    assert_eq!(
+        RawEdge {
+            start: Position { x: 1, y: 1 },
+            end: Position { x: 4, y: 5 }
+        }
+        .distance(),
+        25.0
+    );
 }
 
 #[cfg(test)]
 #[test]
 fn test_raw_edge_deformation() {
-    let source_edge = RawEdge{start: Position {x: 0, y: 0}, end: Position{x: 0, y: 1}};
-    let moved_edge = RawEdge{start: Position {x: 0, y: 0}, end: Position{x: 0, y: 2}};
+    let source_edge = RawEdge {
+        start: Position { x: 0, y: 0 },
+        end: Position { x: 0, y: 1 },
+    };
+    let moved_edge = RawEdge {
+        start: Position { x: 0, y: 0 },
+        end: Position { x: 0, y: 2 },
+    };
     assert_eq!(source_edge.deformation(&moved_edge), 3.0);
 }
 
@@ -59,10 +93,22 @@ pub fn distance(p: &Position, q: &Position) -> f32 {
 #[cfg(test)]
 #[test]
 fn test_distance() {
-    assert_eq!(distance(&Position {x: 0, y:0}, &Position {x: 1, y: 0}), 1.0);
-    assert_eq!(distance(&Position {x: 0, y:0}, &Position {x: 0, y: 1}), 1.0);
-    assert_eq!(distance(&Position {x: 0, y:0}, &Position {x: 0, y: 2}), 4.0);
-    assert_eq!(distance(&Position {x: 1, y:1}, &Position {x: 4, y: 5}), 25.0);
+    assert_eq!(
+        distance(&Position { x: 0, y: 0 }, &Position { x: 1, y: 0 }),
+        1.0
+    );
+    assert_eq!(
+        distance(&Position { x: 0, y: 0 }, &Position { x: 0, y: 1 }),
+        1.0
+    );
+    assert_eq!(
+        distance(&Position { x: 0, y: 0 }, &Position { x: 0, y: 2 }),
+        4.0
+    );
+    assert_eq!(
+        distance(&Position { x: 1, y: 1 }, &Position { x: 4, y: 5 }),
+        25.0
+    );
 }
 
 const FLOATING_POINT_ERROR: f32 = 0.0000002;

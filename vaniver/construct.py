@@ -334,7 +334,9 @@ class search():
         """step randomly picks a candidate to expand from the set and expands it."""
         # if target is not None and len(candidates[0].to_extend) == 0 and sum(candidates[0].dislikes) <= target:
         #     return candidates[0]
-        next_expansion = self.candidates.pop()
+        # next_expansion = self.candidates.pop()
+        next_expansion = sorted(self.candidates, key=lambda f: f.sum_dislikes)[0]
+        self.candidates.remove(next_expansion)
         if self.num_searched % 100 == 0:
             print(self.num_searched, len(self.candidates), 
             self.finished.sum_dislikes if self.finished else "-", 
@@ -355,16 +357,17 @@ class search():
 
 
 if __name__ == "__main__":
-    number = 20
-    p = problem(number)
-    result = p.figure.begin_search(best_sol=0)
-    if result is None:
-        print("No solution found")
-    else:
-        plot_hole(p.figure.hole.vertices)
-        plot_figure(p.figure.edges, result.vertices)
-        print(result.sum_dislikes)
-        print(result.dislikes)
-        print(p.figure.hole.dislikes(result.vertices))
-        plt.show()
-        json.dump({"vertices": result.vertices}, open(os.path.join("solutions",f"{number}-{result.sum_dislikes}-{time.time()}.json"),'w'))
+    numbers = [24] #[21, 24, 25, 26, 34, 35, 38, 39, 41]
+    for number in numbers:
+        p = problem(number)
+        result = p.figure.begin_search(best_sol=0)
+        if result is None:
+            print("No solution found")
+        else:
+            plot_hole(p.figure.hole.vertices)
+            plot_figure(p.figure.edges, result.vertices)
+            print(result.sum_dislikes)
+            print(result.dislikes)
+            print(p.figure.hole.dislikes(result.vertices))
+            plt.show()
+            json.dump({"vertices": result.vertices}, open(os.path.join("solutions",f"{number}-{result.sum_dislikes}-{time.time()}.json"),'w'))

@@ -4,8 +4,17 @@
 # %%
 import os
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 from typing import List
+
+
+# https://stackoverflow.com/a/54769644
+def dataclass_from_dict(cls, d):
+    try:
+        fieldtypes = {f.name:f.type for f in fields(cls)}
+        return cls(**{f:dataclass_from_dict(fieldtypes[f],d[f]) for f in d})
+    except:
+        return d # Not a dataclass field
 
 
 # Path of 'icfp2021' directory
@@ -41,7 +50,8 @@ class Problem:
     def get(cls, number):
         filename = os.path.join(BASE_PATH, 'problems', f'{number}.json')
         with open(filename, 'r') as f:
-            return cls(**json.load(f))
+            return dataclass_from_dict(cls, json.load(f))
+
 
     def json(self):
         return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)

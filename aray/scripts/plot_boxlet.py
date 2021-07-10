@@ -11,9 +11,8 @@ from typing import List, Optional, Tuple, Union
 from itertools import product
 
 from aray.types import Point, Quad
-from aray.intersect import intersections
-from aray.partition import partition
 from aray.boxlet import Boxlet
+from aray.problem import Problem
 
 
 def ccw(A, B, C):
@@ -39,6 +38,8 @@ for ax in axes.flat:
                          for e1, e2 in product(edges, edges))
         if simple:
             break
+
+    print('polygon=', polygon)
 
     ax.set_xlim(-1, 11)
     ax.set_ylim(-1, 11)
@@ -66,7 +67,6 @@ plt.show()
 
 # %%
 
-fig, ax = plt.subplots(1, 1)
 #  generate random 2d points within [0, 10]
 number = random.randint(1,79)
 polygon = Problem.get(number).hole

@@ -18,7 +18,7 @@ from aray.problem import Problem
 # polygon = [Point(random.randint(0, 10), random.randint(0, 10))
 #            for _ in range(4)]
 # polygon = [Point(10, 0), Point(0, 10), Point(10, 10), Point(4, 8)]
-number = random.randint(1,79)
+number = random.randint(1, 79)
 polygon = Problem.get(number).hole
 # polygon = [Point(x=0.9777859405780998, y=7.931598295985899),
 #  Point(x=6.095741485892159, y=7.912919084690875),
@@ -28,6 +28,11 @@ polygon = Problem.get(number).hole
 #  Point(x=8.66436658931826, y=9.238654894097543),
 #  Point(x=3.9793588430828732, y=5.920407912946276),
 #  Point(x=2.7852902459037363, y=1.6504715885934695)]
+polygon = [
+    Point(x=9.693333075533236, y=8.574094317283144),
+    Point(x=6.8962708682948906, y=2.079121151343535),
+    Point(x=6.7811967452339195, y=6.595001343455414),
+    Point(x=3.9014617340203808, y=9.84642920917412)]
 
 
 M = max(int(max(p.x for p in polygon) + 1), 10)
@@ -45,9 +50,11 @@ ax.set_aspect('equal')
 cycle = polygon + [polygon[0]]
 # ax.plot([c.x for c in cycle], [c.y for c in cycle], 'k-')
 
+
 def plot_quad(quad, ax):
     """ Plot a quad """
-    points = [quad.bottom_left, quad.bottom_right, quad.top_right, quad.top_left, quad.bottom_left]
+    points = [quad.bottom_left, quad.bottom_right,
+              quad.top_right, quad.top_left, quad.bottom_left]
     # plot filled in polygon
     xs = [p.x for p in points]
     ys = [p.y for p in points]

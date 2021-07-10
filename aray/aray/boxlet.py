@@ -9,9 +9,9 @@ from collections import namedtuple, defaultdict
 from dataclasses import dataclass
 from typing import List, Optional, Tuple, Union
 
-from aray.types import Point, Quad
-from aray.intersect import intersections
-from aray.partition import partition
+from .types import Point, Quad
+from .intersect import intersections
+from .partition import partition
 
 
 @dataclass
@@ -32,7 +32,7 @@ class Boxlet:
                 left += 1
             last_column = right
             boxlet = cls.from_quad(left, right, quad)
-            if boxlet is not None:
+            if boxlet is not None and len(boxlet.top) > 0:
                 boxlets.append(boxlet)
         return boxlets
 

@@ -9,7 +9,7 @@ from collections import namedtuple, defaultdict
 from dataclasses import dataclass
 from typing import List, Optional, Tuple, Union
 
-from aray.types import Point
+from .types import Point
 
 
 def intersection(A: Point, B: Point, x: float) -> Point:

@@ -11,14 +11,6 @@ from collections import namedtuple
 Point = namedtuple('Point', ['x', 'y'])
 Edge = namedtuple('Edge', ['a', 'b'])
 
-def dataclass_from_dict(cls, d):
-    """ Recursive dataclass builder """
-    try:
-        fieldtypes = {f.name:f.type for f in fields(cls)}
-        return cls(**{f:dataclass_from_dict(fieldtypes[f],d[f]) for f in d})
-    except:
-        return d # Not a dataclass field
-
 
 # Path of 'icfp2021' directory
 BASE_PATH = base = os.path.dirname(os.path.dirname(
@@ -26,23 +18,22 @@ BASE_PATH = base = os.path.dirname(os.path.dirname(
 
 
 @dataclass
-class Figure:
-    vertices: List[Point]
-    edges: List[Edge]
-
-
-@dataclass
 class Problem:
     hole: List[Point]
-    figure: Figure
+    vertices: List[Point]
+    edges: List[Edge]
     epsilon: int
 
     @classmethod
     def get(cls, number):
         filename = os.path.join(BASE_PATH, 'problems', f'{number}.json')
         with open(filename, 'r') as f:
-            return dataclass_from_dict(cls, json.load(f))
-
+            data = json.load(f)
+        hole = [Point(x, y) for x, y in data['hole']]
+        vertices = [Point(x, y) for x, y in data['figure']['vertices']]
+        edges = [Edge(a, b) for a, b in data['figure']['edges']]
+        epsilon = int(data['epsilon'])
+        return cls(hole, vertices, edges, epsilon)
 
     def json(self):
         return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)

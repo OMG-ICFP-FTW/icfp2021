@@ -9,4 +9,6 @@ from collections import namedtuple
 
 Point = namedtuple('Point', ['x', 'y'])
 Edge = namedtuple('Edge', ['a', 'b'])
+Quad = namedtuple(
+    'Quad', ['bottom_left', 'bottom_right', 'top_right', 'top_left'])
 

@@ -9,11 +9,8 @@ from collections import namedtuple, defaultdict
 from dataclasses import dataclass
 from typing import List, Optional, Tuple, Union
 
-Point = namedtuple('Point', ['x', 'y'])
-Quad = namedtuple(
-    'Quad', ['bottom_left', 'bottom_right', 'top_right', 'top_left'])
-
-# %%
+from aray.types import Point, Quad
+from aray.intersect import intersections, intersection, maybe_intersection
 
 
 @dataclass
@@ -30,38 +27,49 @@ class Boxlet:
         """ Partition a simple polygon into boxlets """
         boxlets = []  # list we will fill with boxlets and return
         xs = sorted(set(p.x for p in points))
-        xy = defaultdict(list)  # map from x -> list of y values
-        for p in points:
-            # add p.y twice, once for each line segment
-            xy[p.x].append(p.y)
-            xy[p.x].append(p.y)
-        # convert xy to map from x -> sorted list of y values
-        xy = {x: sorted(ys) for x, ys in xy.items()}
+        # Get all our y points for each x
+        xy = defaultdict(list)
         for x in xs:
-            print('xy', x, xy[x])
+            for i in range(len(points)):
+                A = points[i]
+                B = points[(i + 1) % len(points)]
+                p = maybe_intersection(A, B, x)
+                if p is not None:
+                    xy[x].append(p.y)
+        # Get all our quads
         exclude = None
         for i in range(len(xs) - 1):
-            left, right = ceil(xs[i]), floor(xs[i + 1])
+            xmin, xmax = xs[i], xs[i + 1]
+            assert xmin < xmax, f'{points}'
+            left, right = ceil(xmin), floor(xmax)
             if left == exclude:
                 left += 1  # avoid double-counting columns
             exclude = right  # set new bound for next iteration
             if right < left:  # doesn't cover any integer points
                 continue
-            ys = list(reversed(sorted(zip(xy[xs[i]], xy[xs[i + 1]]))))
-            print('ys', ys)
             # Create a boxlet for each pair of ys in order
+            left_ys = sorted(xy[xmin])
+            right_ys = sorted(xy[xmax])
+            ys = list(zip(left_ys, right_ys))
             assert len(ys) % 2 == 0, f'odd number of y values, {points}'
             for j in range(0, len(ys) - 1, 2):
-                quad = Quad(bottom_left=Point(xs[i], ys[j + 1][0]),
-                            bottom_right=Point(xs[i + 1], ys[j + 1][1]),
-                            top_right=Point(xs[i + 1], ys[j][1]),
-                            top_left=Point(xs[i], ys[j][0]))
+                bottom_left = Point(xmin, ys[j][0])
+                bottom_right = Point(xmax, ys[j][1])
+                top_left = Point(xmin, ys[j + 1][0])
+                top_right = Point(xmax, ys[j + 1][1])
+                # check that we have at least 3 unique points
+                assert len(set((bottom_left, top_left, bottom_right, top_right))), \
+                    f'{points}\n{bottom_left}\n{top_left}\n{bottom_right}\n{top_right}'
+
+                quad = Quad(bottom_left=bottom_left, bottom_right=bottom_right,
+                            top_right=top_right, top_left=top_left)
                 assert quad.top_left.y >= quad.bottom_left.y, f'{quad}'
                 assert quad.top_right.y >= quad.bottom_right.y, f'{quad}'
                 assert quad.top_left.x <= quad.top_right.x, f'{quad}'
                 assert quad.bottom_left.x <= quad.bottom_right.x, f'{quad}'
                 boxlet = cls.from_quad(left, right, quad)
-                boxlets.append(boxlet)
+                if boxlet is not None:
+                    boxlets.append(boxlet)
         return boxlets
 
     @classmethod
@@ -75,28 +83,43 @@ class Boxlet:
         # Only deal with column quads for now
         assert quad.top_left.x == quad.bottom_left.x, f'{quad}'
         assert quad.top_right.x == quad.bottom_right.x, f'{quad}'
+        # Check that we have at least 3 unique points
+        assert len(set(quad)) >= 3, f'{quad}\n{set(quad)}'
 
-        if quad.top_left.x == quad.top_right.x: # Single column
+        if quad.top_left.x == quad.top_right.x:  # Single column
             top = [quad.top_left.y]
             bottom = [quad.bottom_left.y]
         else:  # linear interpolation
-            # calculate the top
-            C = (quad.top_right.y - quad.top_left.y) / \
-                (quad.top_right.x - quad.top_left.x)
-            top = [quad.top_left.y + (x - quad.top_left.x)
-                * C for x in range(left, right + 1)]
-            top = [floor(y) for y in top]
-            # calculate the bottom
-            C = (quad.bottom_right.y - quad.bottom_left.y) / \
-                (quad.bottom_right.x - quad.bottom_left.x)
-            bottom = [quad.bottom_left.y +
-                    (x - quad.bottom_left.x) * C for x in range(left, right + 1)]
-            bottom = [ceil(y) for y in bottom]
+            top_points = intersections(quad.top_left, quad.top_right)
+            bottom_points = intersections(quad.bottom_left, quad.bottom_right)
+            assert len(top_points) == len(bottom_points), f'{quad}'
+            top = []
+            bottom = []
+            xs = []
+            for t, b in zip(top_points, bottom_points):
+                assert t.x == b.x, f'{quad}'
+                ymax = floor(t.y)
+                ymin = ceil(b.y)
+                if ymax < ymin:
+                    continue
+                else:
+                    xs.append(t.x)
+                    top.append(ymax)
+                    bottom.append(ymin)
+            # empty set means no points
+            if len(xs) == 0:
+                return None
+            # check that xs are contiguous
+            assert len(set(xs)) == len(xs), f'{quad}'
+            assert xs[0] == min(xs), f'{quad}'
+            assert xs[-1] == max(xs), f'{quad}'
 
-        xmin = left
-        xmax = right
+        xmin = min(xs)
+        xmax = max(xs)
         ymin = min(bottom)
         ymax = max(top)
+        assert all(t >= b for t, b in zip(top, bottom)
+                   ), f'{quad},{top},{bottom}'
         return cls(xmin, xmax, ymin, ymax, top, bottom)
 
     @classmethod
@@ -110,11 +133,15 @@ class Boxlet:
     def iter_points(self):
         """ Generate all of the interior points """
         for i, x in enumerate(range(self.xmin, self.xmax + 1)):
+            print('iter', i, x)
+            print('range', range(self.bottom[i], self.top[i] + 1))
             for y in range(self.bottom[i], self.top[i] + 1):
+                print('inner', y)
                 yield Point(x, y)
         return
 
-# %%  generate 3 random 2d points within [0, 10]
+
+#  generate 3 random 2d points within [0, 10]
 polygon = [Point(random.uniform(0, 10), random.uniform(0, 10))
            for _ in range(3)]
 
@@ -129,28 +156,38 @@ ax.set_aspect('equal')
 
 cycle = polygon + [polygon[0]]
 ax.plot([c.x for c in cycle], [c.y for c in cycle], 'k:')
-plt.show()
 
 boxlets = Boxlet.partition(polygon)
 print('boxlets', boxlets)
+for boxlet in boxlets:
+    print('plotting boxlet', boxlet)
+    points = list(boxlet.iter_points())
+    xs = [p.x for p in points]
+    ys = [p.y for p in points]
+    assert xs, f'no points {boxlet}'
+    assert ys, f'no points {boxlet}'
+    print('xs', xs, 'ys', ys)
+    print(ax.scatter(xs, ys, s=6))
+plt.show()
+
 
 # %%
-points = list(boxlet.iter_points())
-xs = [p.x for p in points]
-ys = [p.y for p in points]
+# points = list(boxlet.iter_points())
+# xs = [p.x for p in points]
+# ys = [p.y for p in points]
 
-# show integer grid lines
-ax.set_xticks(range(11))
-ax.set_yticks(range(11))
-ax.grid(which='major', axis='x', linewidth=0.75, color='k', alpha=0.1)
-ax.grid(which='major', axis='y', linewidth=0.75, color='k', alpha=0.1)
+# # show integer grid lines
+# ax.set_xticks(range(11))
+# ax.set_yticks(range(11))
+# ax.grid(which='major', axis='x', linewidth=0.75, color='k', alpha=0.1)
+# ax.grid(which='major', axis='y', linewidth=0.75, color='k', alpha=0.1)
 
-ax.plot([left, left, right, right, left], [bottom_left,
-        top_left, top_right, bottom_right, bottom_left], 'k:')
-print(f'xs({len(xs)})', xs)
-print(f'ys({len(ys)})', ys)
-if xs and ys:
-    plt.scatter(xs, ys)
+# ax.plot([left, left, right, right, left], [bottom_left,
+#         top_left, top_right, bottom_right, bottom_left], 'k:')
+# print(f'xs({len(xs)})', xs)
+# print(f'ys({len(ys)})', ys)
+# if xs and ys:
+#     plt.scatter(xs, ys)
 
 
 # %%
@@ -182,6 +219,7 @@ for fname in ['uniform', 'randint']:
         points = [quad.bottom_left, quad.bottom_right,
                   quad.top_right, quad.top_left, quad.bottom_left]
         ax.plot([p.x for p in points], [p.y for p in points], 'k:')
+        plt.show()
         # plot boxlet, if nonzero interior points
         if left <= right:
             boxlet = Boxlet.from_quad(left, right, quad)

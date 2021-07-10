@@ -2,5 +2,8 @@
 
 members = [
     "judge",
+    "clipper-sys",
 ]
 
+[patch.crates-io]
+clipper-sys = { path = "clipper-sys" }

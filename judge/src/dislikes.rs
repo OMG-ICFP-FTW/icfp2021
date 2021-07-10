@@ -36,7 +36,7 @@ impl RawEdge {
 }
 
 pub fn distance(p: &Position, q: &Position) -> u32 {
-    (p.x - q.x).pow(2) + (p.y - q.y).pow(2)
+    ((p.x as i32 - q.x as i32).pow(2) + (p.y as i32 - q.y as i32).pow(2)) as u32
 }
 
 pub fn edge_deformation_constraint(original: &RawEdge, moved: &RawEdge, epsilon: u32) -> bool {
@@ -237,9 +237,9 @@ fn test_concave_hull() {
         ],
         vertices: vec![
             Position { x: 0, y: 0 },
-            Position { x: 0, y: 2 },
-            Position { x: 2, y: 2 },
             Position { x: 2, y: 0 },
+            Position { x: 2, y: 2 },
+            Position { x: 0, y: 2 },
             Position { x: 0, y: 0 },
             Position { x: 1, y: 1 },
         ],
@@ -249,26 +249,71 @@ fn test_concave_hull() {
     assert_eq!(square_with_interior_point_hull, square.vertices);
 }
 
-fn subtract_polygons(lead: &Vec<Position>, follow: &Vec<Position>) -> Vec<Position> {
-    panic!("Not yet implemented");
-}
-
 /// Constraint C
 pub fn figure_is_within_hole(figure: &Figure, hole: &Vec<Position>) -> bool {
-    let bounds = bounding_polygon(figure);
+    use geo::relate::Relate as _;
+    use geo_clipper::Clipper;
 
-    subtract_polygons(&bounds, hole).len() == 0
+    let mut figure_coords: Vec<geo::Coordinate<f64>> = figure
+        .vertices
+        .iter()
+        .map(|p| geo::Coordinate {
+            x: p.x as f64,
+            y: p.y as f64,
+        })
+        .collect();
+    figure_coords.push(figure_coords[0]);
+    let figure_line_string: geo::LineString<f64> = figure_coords.into();
+    let figure_poly = geo::Polygon::new(figure_line_string, vec![]);
+
+    let mut hole_coords: Vec<geo::Coordinate<f64>> = hole
+        .iter()
+        .map(|p| geo::Coordinate {
+            x: p.x as f64,
+            y: p.y as f64,
+        })
+        .collect();
+    hole_coords.push(hole_coords[0]);
+    let hole_line_string: geo::LineString<f64> = hole_coords.into();
+    let hole_poly = geo::Polygon::new(hole_line_string, vec![]);
+
+    let remainder: Vec<geo::Polygon<f64>> = hole_poly
+        .union(&figure_poly, 2.0)
+        .difference(&hole_poly, 2.0)
+        .iter()
+        .cloned()
+        .collect();
+
+    remainder.len() == 0
 }
 
 /// Apply all three constaints of A, B, and C
-pub fn figure_is_valid(problem: &Problem, solution: &Solution) -> bool {
+pub fn figure_is_valid(problem: &Problem, solution: &Solution) -> Result<(), String> {
     let original_figure = &problem.figure;
     let moved_figure = Figure {
         edges: original_figure.edges.clone(),
         vertices: solution.vertices.clone(),
     };
 
-    figures_are_consistent(original_figure, &moved_figure)
-        && figure_is_within_deformation_bounds(original_figure, &moved_figure, problem.epsilon)
-        && figure_is_within_hole(&moved_figure, &problem.hole)
+    let mut errors: Vec<String> = vec![];
+    if !figures_are_consistent(original_figure, &moved_figure) {
+        errors.push("Figure is inconsistent".to_string());
+    }
+
+    if !figure_is_within_deformation_bounds(original_figure, &moved_figure, problem.epsilon) {
+        errors.push("Figure is too deformed".to_string());
+    }
+
+    if !figure_is_within_hole(&moved_figure, &problem.hole) {
+        errors.push("Figure does not fit within hole".to_string());
+    }
+
+    if errors.len() == 0 {
+        Ok(())
+    } else {
+        Err(format!(
+            "Figure is invalid for the following reasons: {:?}",
+            errors
+        ))
+    }
 }

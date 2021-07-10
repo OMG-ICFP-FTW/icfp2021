@@ -26,21 +26,49 @@ pub struct RawEdge {
 }
 
 impl RawEdge {
-    pub fn length(&self) -> u32 {
+    pub fn distance(&self) -> f32 {
         distance(&self.start, &self.end)
     }
 
     pub fn deformation(&self, other: &RawEdge) -> f32 {
-        self.length() as f32 / other.length() as f32 - 1.0
+        ((other.distance() / self.distance()) - 1.0).abs()
     }
 }
 
-pub fn distance(p: &Position, q: &Position) -> u32 {
-    ((p.x as i32 - q.x as i32).pow(2) + (p.y as i32 - q.y as i32).pow(2)) as u32
+#[cfg(test)]
+#[test]
+fn test_raw_edge_distance() {
+    assert_eq!(RawEdge {start: Position {x: 0, y:0}, end: Position {x: 1, y: 0}}.distance(), 1.0);
+    assert_eq!(RawEdge {start: Position {x: 0, y:0}, end: Position {x: 0, y: 1}}.distance(), 1.0);
+    assert_eq!(RawEdge {start: Position {x: 0, y:0}, end: Position {x: 0, y: 2}}.distance(), 4.0);
+    assert_eq!(RawEdge {start: Position {x: 1, y:1}, end: Position {x: 4, y: 5}}.distance(), 25.0);
 }
 
+#[cfg(test)]
+#[test]
+fn test_raw_edge_deformation() {
+    let source_edge = RawEdge{start: Position {x: 0, y: 0}, end: Position{x: 0, y: 1}};
+    let moved_edge = RawEdge{start: Position {x: 0, y: 0}, end: Position{x: 0, y: 2}};
+    assert_eq!(source_edge.deformation(&moved_edge), 3.0);
+}
+
+pub fn distance(p: &Position, q: &Position) -> f32 {
+    (p.x as f32 - q.x as f32).powi(2) + (p.y as f32 - q.y as f32).powi(2)
+}
+
+#[cfg(test)]
+#[test]
+fn test_distance() {
+    assert_eq!(distance(&Position {x: 0, y:0}, &Position {x: 1, y: 0}), 1.0);
+    assert_eq!(distance(&Position {x: 0, y:0}, &Position {x: 0, y: 1}), 1.0);
+    assert_eq!(distance(&Position {x: 0, y:0}, &Position {x: 0, y: 2}), 4.0);
+    assert_eq!(distance(&Position {x: 1, y:1}, &Position {x: 4, y: 5}), 25.0);
+}
+
+const FLOATING_POINT_ERROR: f32 = 0.0000002;
 pub fn edge_deformation_constraint(original: &RawEdge, moved: &RawEdge, epsilon: u32) -> bool {
-    original.deformation(moved) <= epsilon as f32 / 1_000_000.0
+    let deformation = original.deformation(moved);
+    deformation <= (epsilon as f32 / 1_000_000.0) + FLOATING_POINT_ERROR
 }
 
 /// Constraint A
@@ -151,107 +179,8 @@ fn test_convex_hull() {
     assert_eq!(square_with_interior_point_hull, square);
 }
 
-/// Find the bounding polygon for this figure
-fn bounding_polygon(figure: &Figure) -> Vec<Position> {
-    use geo::algorithm::concave_hull::ConcaveHull as _;
-    use geo::algorithm::simplify::Simplify as _;
-
-    let mut coords: Vec<geo::Coordinate<f32>> = figure
-        .vertices
-        .iter()
-        .map(|p| geo::Coordinate {
-            x: p.x as f32,
-            y: p.y as f32,
-        })
-        .collect();
-    let line_string: geo::LineString<f32> = coords.into();
-    let poly = geo::Polygon::new(line_string, vec![]);
-    let poly = poly.simplify(&0.01);
-    let hull = poly.concave_hull(0.1);
-
-    let hull_points: Vec<Position> = hull
-        .exterior()
-        .points_iter()
-        .map(|p| Position {
-            x: p.x() as u32,
-            y: p.y() as u32,
-        })
-        .collect();
-
-    hull_points.split_last().unwrap().1.to_vec()
-}
-
-#[cfg(test)]
-#[test]
-fn test_concave_hull() {
-    let mut diamond = Figure {
-        edges: vec![
-            Edge { start: 0, end: 1 },
-            Edge { start: 1, end: 2 },
-            Edge { start: 2, end: 3 },
-            Edge { start: 3, end: 0 },
-        ],
-        vertices: vec![
-            Position { x: 1, y: 2 },
-            Position { x: 2, y: 1 },
-            Position { x: 1, y: 0 },
-            Position { x: 0, y: 1 },
-            Position { x: 1, y: 2 },
-        ],
-    };
-    let mut diamond_hull = bounding_polygon(&diamond);
-    diamond.vertices.sort();
-    diamond.vertices.dedup();
-    diamond_hull.sort();
-    assert_eq!(diamond_hull, diamond.vertices);
-
-    let mut square = Figure {
-        edges: vec![
-            Edge { start: 0, end: 1 },
-            Edge { start: 1, end: 2 },
-            Edge { start: 2, end: 3 },
-            Edge { start: 3, end: 0 },
-        ],
-        vertices: vec![
-            Position { x: 0, y: 0 },
-            Position { x: 0, y: 2 },
-            Position { x: 2, y: 2 },
-            Position { x: 2, y: 0 },
-            Position { x: 0, y: 0 },
-        ],
-    };
-    let mut square_hull = bounding_polygon(&square);
-    square.vertices.sort();
-    square.vertices.dedup();
-    square_hull.sort();
-    assert_eq!(square_hull, square.vertices);
-
-    let mut square_with_interior_point = Figure {
-        edges: vec![
-            Edge { start: 0, end: 1 },
-            Edge { start: 1, end: 2 },
-            Edge { start: 2, end: 3 },
-            Edge { start: 3, end: 0 },
-            Edge { start: 3, end: 4 },
-            Edge { start: 4, end: 2 },
-        ],
-        vertices: vec![
-            Position { x: 0, y: 0 },
-            Position { x: 2, y: 0 },
-            Position { x: 2, y: 2 },
-            Position { x: 0, y: 2 },
-            Position { x: 0, y: 0 },
-            Position { x: 1, y: 1 },
-        ],
-    };
-    let mut square_with_interior_point_hull = bounding_polygon(&square_with_interior_point);
-    square_with_interior_point_hull.sort();
-    assert_eq!(square_with_interior_point_hull, square.vertices);
-}
-
 /// Constraint C
 pub fn figure_is_within_hole(figure: &Figure, hole: &Vec<Position>) -> bool {
-    use geo::relate::Relate as _;
     use geo_clipper::Clipper;
 
     let mut figure_coords: Vec<geo::Coordinate<f64>> = figure

@@ -184,7 +184,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 serde_json::from_str(&solution_contents).expect("JSON was not well-formatted");
 
             println!(
-                "Solution was valid: {:?}",
+                "Solution validity: {:?}",
                 dislikes::figure_is_valid(&problem, &solution)
             );
 

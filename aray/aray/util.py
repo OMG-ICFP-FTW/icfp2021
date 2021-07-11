@@ -3,7 +3,14 @@
 
 import math
 
+from .types import Point
+
 MACHINE_EPS = 1e-9
+
+
+def dist(a: Point, b: Point):
+    """Return the squared distance between two points"""
+    return (a.x - b.x) ** 2 + (a.y - b.y) ** 2
 
 
 def ceil(x):

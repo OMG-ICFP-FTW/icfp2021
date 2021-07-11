@@ -12,6 +12,7 @@ import os
 import requests
 import logging
 from enum import Enum
+import numpy
 
 # import matplotlib.pyplot as plt
 # plt.style.use('seaborn-whitegrid')
@@ -203,6 +204,11 @@ class Brainfart:
         logging.info(
             f"Hole possible locations {len(self.allowed_positions)} / {(hole_max_x - hole_min_x) * (hole_max_y - hole_min_y)}")
 
+        logging.info("Computing all edge locations with distance")
+        point_pair_w_dist = [
+            (p1, p2, dsq(p1, p2)) for p1 in
+                self.allowed_positions for p2 in self.allowed_positions]
+
         # Create a map of all possible starting and ending x,y for each edge
         logging.info(f"Total edges {len(self.figure_edges)}")
         for i, edge in enumerate(self.figure_edges):
@@ -212,31 +218,14 @@ class Brainfart:
 
             # calculates about 1M allowed lines per minute
             allowed_assignments = []
-            for p1 in self.allowed_positions:
-                for p2 in self.allowed_positions:
-                    new_sq_distance = dsq(p1, p2)  # math.pow(p2[0] - p1[0], 2) + math.pow(p2[1] - p1[1], 2)
+            for (p1, p2, new_sq_distance) in point_pair_w_dist:
+                r = abs(new_sq_distance / sq_distance - 1)
 
-                    r = abs(new_sq_distance / sq_distance - 1)
-
-                    if r <= self.epsilon / 1000000:
-                        # check if the line collides with the hole
-                        # XXX myenik hax
-                        # sh_edge = LineString([p1, p2])
-                        # intersection = sh_edge.intersection(sh_hole_linestring)
-                        # if isinstance(intersection, Point):
-                        #     # logging.info(f"Intersection is single point {intersection} relative to {p1} and {p2}")
-                        #     # logging.info(intersection.distance(Point(p1)))
-                        #     # logging.info(intersection.distance(Point(p2)))
-                        #     if intersection.distance(Point(p1)) > 1e-8 and intersection.distance(Point(p2)) > 1e-8:
-                        #         continue
-                        # else:
-                        #     # logging.debug(f"Skip collision {p1} -> {p2} = {sh_edge.intersection(sh_hole_linestring)}")
-                        #     continue
-                        # allowed_assignments.append((p1[0], p1[1], p2[0], p2[1]))
-                        segment = (p1, p2)
-                        if test_segment_intersects_hole(segment, self.hole):
-                            continue
-                        allowed_assignments.append((p1[0], p1[1], p2[0], p2[1]))
+                if r <= self.epsilon / 1000000:
+                    segment = (p1, p2)
+                    if test_segment_intersects_hole(segment, self.hole):
+                        continue
+                    allowed_assignments.append((p1[0], p1[1], p2[0], p2[1]))
 
             model.AddAllowedAssignments([
                 pose_vertices[edge[0]][0],

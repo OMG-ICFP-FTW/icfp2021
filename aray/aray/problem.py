@@ -7,6 +7,7 @@ import json
 from dataclasses import dataclass
 from typing import List, Set, Dict
 from collections import defaultdict
+import requests
 
 from .types import Point, Edge
 from .util import dist
@@ -16,6 +17,23 @@ from .util import dist
 # Path of 'icfp2021' directory
 BASE_PATH = base = os.path.dirname(os.path.dirname(
     os.path.dirname(os.path.realpath(__file__))))
+
+
+def get_problem_json_path(i: int) -> str:
+    filename = os.path.join(BASE_PATH, 'problems', f'{i}.json')
+    # if it doesn't exist, download it
+    if not os.path.exists(filename):
+        print(f'Downloading problem {i}')
+        TEAM_NAME = "OMG ICFP FTW"
+        YOUR_API_TOKEN = "b5d3e724-0d12-4926-b223-e9cd180c3003"
+        headers = {"Authorization": "Bearer " + YOUR_API_TOKEN}
+        r = requests.get(f"https://poses.live/api/problems/{i}", headers=headers)
+        r.raise_for_status()
+        data = r.json()
+        # Write data to file
+        with open(filename, 'w') as f:
+            json.dump(data, f)
+    return filename
 
 
 @dataclass
@@ -29,7 +47,7 @@ class Problem:
 
     @classmethod
     def get(cls, number):
-        filename = os.path.join(BASE_PATH, 'problems', f'{number}.json')
+        filename = get_problem_json_path(number)
         with open(filename, 'r') as f:
             data = json.load(f)
         hole = [Point(x, y) for x, y in data['hole']]

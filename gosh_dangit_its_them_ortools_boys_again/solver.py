@@ -205,6 +205,13 @@ class Brainfart:
             f"Hole possible locations {len(self.allowed_positions)} / {(hole_max_x - hole_min_x) * (hole_max_y - hole_min_y)}")
 
         logging.info("Computing all edge locations with distance")
+
+        def intersects(segment, boundary):
+            if LineString(segment).intersects(boundary):
+                return test_segment_intersects_hole(segment, self.hole)
+            return False
+
+        hole_boundary = LineString(self.hole)
         point_pair_w_dist = [
             (p1, p2, dsq(p1, p2)) for p1 in
                 self.allowed_positions for p2 in self.allowed_positions]
@@ -220,10 +227,8 @@ class Brainfart:
             allowed_assignments = []
             for (p1, p2, new_sq_distance) in point_pair_w_dist:
                 r = abs(new_sq_distance / sq_distance - 1)
-
                 if r <= self.epsilon / 1000000:
-                    segment = (p1, p2)
-                    if test_segment_intersects_hole(segment, self.hole):
+                    if intersects((p1, p2), hole_boundary):
                         continue
                     allowed_assignments.append((p1[0], p1[1], p2[0], p2[1]))
 

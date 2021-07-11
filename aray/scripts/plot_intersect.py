@@ -3,13 +3,13 @@
 # %%
 import matplotlib.pyplot as plt
 import random
-from math import floor, ceil
 from collections import namedtuple, defaultdict
 from dataclasses import dataclass
 from typing import List, Optional, Tuple, Union
 
 from aray.types import Point
 from aray.intersect import intersection, intersections, maybe_intersection
+from aray.util import floor, ceil
 
 import random
 N = 4

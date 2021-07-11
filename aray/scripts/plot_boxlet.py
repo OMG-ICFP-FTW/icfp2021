@@ -4,7 +4,6 @@
 # %%
 import matplotlib.pyplot as plt
 import random
-from math import floor, ceil
 from collections import namedtuple, defaultdict
 from dataclasses import dataclass
 from typing import List, Optional, Tuple, Union
@@ -13,6 +12,8 @@ from itertools import product
 from aray.types import Point, Quad
 from aray.boxlet import Boxlet
 from aray.problem import Problem
+from aray.util import ceil, floor
+
 
 
 def ccw(A, B, C):
@@ -61,21 +62,22 @@ for ax in axes.flat:
             ys = [p.y for p in points]
             assert xs, f'no points {boxlet}'
             assert ys, f'no points {boxlet}'
-            print('xs', xs, 'ys', ys)
+            # print('xs', xs, 'ys', ys)
             ax.scatter(xs, ys, s=8)
 plt.show()
 
 # %%
 
 #  generate random 2d points within [0, 10]
-number = random.randint(1,79)
+# number = random.randint(1,79)
+number = 31
 polygon = Problem.get(number).hole
 cycle = polygon + [polygon[0]]
 
 M = max(int(max(p.x for p in polygon) + 1), 10)
 N = max(int(max(p.y for p in polygon) + 1), 10)
 
-fig, ax = plt.subplots()
+fig, ax = plt.subplots(figsize=(10, 10))
 ax.set_xlim(-1, M)
 ax.set_ylim(-1, N)
 ax.set_xticks(range(M))
@@ -89,14 +91,28 @@ ax.plot([c.x for c in cycle], [c.y for c in cycle], 'k-', linewidth=1)
 
 if simple:
     boxlets = Boxlet.from_polygon(polygon)
-    print('boxlets', boxlets)
+    # print('boxlets', boxlets)
     for boxlet in boxlets:
-        print('plotting boxlet', boxlet)
+        # print('plotting boxlet', boxlet)
         points = list(boxlet.iter_points())
         xs = [p.x for p in points]
         ys = [p.y for p in points]
         assert xs, f'no points {boxlet}'
         assert ys, f'no points {boxlet}'
-        print('xs', xs, 'ys', ys)
+        # print('xs', xs, 'ys', ys)
         ax.scatter(xs, ys, s=8)
+
+
+problematic_edge = [Point(x=32, y=0), Point(x=57, y=20)]
+
+# plot this edge in blue
+ax.plot([problematic_edge[0].x, problematic_edge[1].x],
+        [problematic_edge[0].y, problematic_edge[1].y],
+        'b-', linewidth=2)
+
+
 plt.show()
+
+
+# %%
+57 - 32

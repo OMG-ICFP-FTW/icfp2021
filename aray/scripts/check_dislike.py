@@ -3,6 +3,7 @@
 
 # %%
 import os
+from posix import PRIO_USER
 import re
 import json
 from glob import glob
@@ -21,15 +22,11 @@ for file in glob(os.path.join(solutions, '*')):
     match = FILENAME_REGEX.match(os.path.basename(file))
     if match:
         problem_number = int(match.group(1))
-        score_number = int(match.group(2))
+        score = int(match.group(2))
         with open(file) as f:
             data = json.load(f)
-        scores[problem_number] = score_number
-        poses[problem_number] = Pose.from_json(data)
-        problems[problem_number] = Problem.get(problem_number)
-
-# %%
-for i in sorted(scores.keys()):
-    check = dislikes(problems[i].hole, poses[i].vertices)
-    score = scores[i]
-    assert check == score, f'{i}: {check} != {score}'
+        pose = Pose.from_json(data)
+        problem = Problem.get(problem_number)
+        check = dislikes(problem.hole, pose.vertices)
+        assert check == score, f'{i}: {check} != {score}'
+        print('checked', match.groups())

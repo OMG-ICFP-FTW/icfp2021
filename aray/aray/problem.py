@@ -5,13 +5,12 @@
 import os
 import json
 from dataclasses import dataclass
-from typing import List, Set, Dict
+from typing import List, Set, Dict, Optional
 from collections import defaultdict
 import requests
 
 from .types import Point, Edge
 from .util import dist
-
 
 
 # Path of 'icfp2021' directory
@@ -27,7 +26,8 @@ def get_problem_json_path(i: int) -> str:
         TEAM_NAME = "OMG ICFP FTW"
         YOUR_API_TOKEN = "b5d3e724-0d12-4926-b223-e9cd180c3003"
         headers = {"Authorization": "Bearer " + YOUR_API_TOKEN}
-        r = requests.get(f"https://poses.live/api/problems/{i}", headers=headers)
+        r = requests.get(
+            f"https://poses.live/api/problems/{i}", headers=headers)
         r.raise_for_status()
         data = r.json()
         # Write data to file
@@ -42,7 +42,7 @@ class Problem:
     vertices: List[Point]  # original vertices
     edges: List[Edge]  # list of edges in the pose
     dists: List[int]  # squared distance for original edge lengths
-    edge_map: Dict[int, List[int]] # map vertex index -> list of edge indexes
+    edge_map: Dict[int, List[int]]  # map vertex index -> list of edge indexes
     epsilon: int
 
     @classmethod
@@ -70,13 +70,14 @@ class Problem:
 @dataclass
 class Pose:
     vertices: List[Point]
+    dislikes: Optional[int] = None
 
     @classmethod
-    def from_json(cls, data):
+    def from_json(cls, data, dislikes=None):
         assert isinstance(data, dict), f'{data} is not a dict'
         assert tuple(data.keys()) == ('vertices',), f'{data} is not a pose'
         vertices = [Point(x, y) for x, y in data['vertices']]
-        return cls(vertices)
+        return cls(vertices, dislikes=dislikes)
 
     def json(self):
         return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)

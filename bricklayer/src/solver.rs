@@ -1,28 +1,10 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeSet};
 
 use log::error;
 
 use geo::{polygon, Point, Polygon, Coordinate};
 use judge::format::{Figure, Position, Problem, Solution};
-
-pub fn compute_bounded_integer_points(boundary: &Polygon<f32>) -> Vec<Point<f32>> {
-    use geo::algorithm::euclidean_distance::EuclideanDistance;
-    use geo::extremes::Extremes as _;
-
-    let mut bounded_integer_points = vec![];
-    let extremes = boundary.extremes().unwrap();
-    for x in (extremes.x_min.coord.x as usize)..((extremes.x_max.coord.x + 1.0) as usize) {
-        for y in (extremes.y_min.coord.y as usize)..((extremes.y_max.coord.y + 1.0)  as usize) {
-            let point = Point(Coordinate {x: x as f32, y: y as f32});
-            if point.euclidean_distance(boundary) < 0.00001 {
-                bounded_integer_points.push(point)
-            } else {
-            }
-        }
-    }
-
-    bounded_integer_points
-}
+use crate::util::{positions_to_polygon, compute_bounded_integer_points};
 
 // #[cfg(test)]
 // #[test]
@@ -105,18 +87,6 @@ fn test_compute_bounded_integer_points() {
         }))
         .collect();
     assert_eq!(compute_bounded_integer_points(&unit_square), expected);
-}
-
-fn positions_to_polygon(positions: &Vec<Position>) -> Polygon<f32> {
-    let coords: Vec<geo::Coordinate<f32>> = positions
-        .iter()
-        .map(|p| geo::Coordinate {
-            x: p.x as f32,
-            y: p.y as f32,
-        })
-        .collect();
-
-    geo::Polygon::new(geo::LineString::from(coords), vec![])
 }
 
 #[allow(unused)]

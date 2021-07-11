@@ -175,7 +175,7 @@ fn convex_hull(points: &Vec<Position>) -> Vec<Position> {
     let poly = geo::Polygon::new(geo::LineString::from(coords), vec![]);
     let hull = poly.convex_hull();
 
-    let mut hull_points: Vec<Position> = hull
+    let hull_points: Vec<Position> = hull
         .exterior()
         .points_iter()
         .map(|p| Position {

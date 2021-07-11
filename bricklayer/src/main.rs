@@ -5,6 +5,8 @@ use log::{Level, Metadata, Record};
 use log::{LevelFilter, SetLoggerError};
 
 mod solver;
+mod vaniver;
+mod util;
 
 static LOGGER: SimpleLogger = SimpleLogger;
 

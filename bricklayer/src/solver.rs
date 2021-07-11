@@ -120,6 +120,10 @@ fn positions_to_polygon(positions: &Vec<Position>) -> Polygon<f32> {
     geo::Polygon::new(geo::LineString::from(coords), vec![])
 }
 
+
+type SetOfPaths = BTreeSet<Vec<VertexId>>;
+type SlotPossibilities = BTreeMap<SlotId, BTreeMap<VertexId, SetOfPaths>>;
+
 #[allow(unused)]
 struct WaveFunction {
     // TODO(akesling): Implement
@@ -127,13 +131,40 @@ struct WaveFunction {
     //   For all hole slots:
     //     For all figure points - {"root"}
     //       All paths to a given point
-    states: BTreeMap<VertexId, BTreeMap<SlotId, BTreeMap<VertexId, BTreeSet<Vec<VertexId>>>>>
+    states: BTreeMap<VertexId, SlotPossibilities>
 }
 
 #[allow(unused)]
 impl WaveFunction {
-    fn from_figure_and_lattice(lattice: &Vec<Point<f32>>, figure: &Figure) -> WaveFunction {
-        panic!("Not yet implemented.")
+    fn from_figure_and_lattice(lattice: &[Point<f32>], figure: &Figure) -> WaveFunction {
+        // For all figure points:
+        //   For all hole slots:
+        //     For all figure points - {"root"}
+        //       All paths to a given point
+        let mut root_map: BTreeMap<VertexId, SlotPossibilities> = BTreeMap::new();
+        for root_index in 0..figure.vertices.len() {
+            let root = VertexId(root_index as u8);
+            let mut slot_possibilities: SlotPossibilities = BTreeMap::new();
+            for hole_slot_index in 0..lattice.len() {
+                let slot = SlotId(hole_slot_index as u32);
+                let mut possibilities: BTreeMap<VertexId, SetOfPaths> = BTreeMap::new();
+                for member_index in 0..figure.vertices.len() {
+                    let member = VertexId(member_index as u8);
+                    if possibilities.contains_key(&member) {
+                    } else {
+                        let mut paths: SetOfPaths = BTreeSet::new();
+                        // TODO(akesling): Actually compute paths;
+                        possibilities.insert(member, paths);
+                    }
+                }
+                slot_possibilities.insert(slot, possibilities);
+            }
+            root_map.insert(root, slot_possibilities);
+        }
+
+        WaveFunction {
+            states: root_map,
+        }
     }
 
     fn remove_derivative_images(&mut self, image: &WaveImage) -> Result<(), String> {
@@ -153,7 +184,7 @@ struct WaveImage {
 #[derive(PartialOrd, Ord, PartialEq, Eq, Copy, Clone)]
 struct VertexId(u8);
 #[derive(PartialOrd, Ord, PartialEq, Eq, Copy, Clone)]
-struct SlotId(u8);
+struct SlotId(u32);
 
 #[allow(unused)]
 impl WaveImage {

@@ -21,7 +21,7 @@ def stretch(start: Point, d_old: int, epsilon: int) -> List[Point]:
     for x in range(x_outer_min, x_outer_max + 1):
         delta_x = abs(x - start.x)
         if x <= x_inner_min or x >= x_inner_max:
-            assert delta_x > inner
+            assert delta_x >= inner, f'{delta_x} {inner} {x} {x_inner_min} {x_inner_max}'
             # calculate the y values on outer circle for this x
             delta_y = (outer ** 2 - delta_x ** 2) ** 0.5
             y_outer_max = floor(start.y + delta_y)

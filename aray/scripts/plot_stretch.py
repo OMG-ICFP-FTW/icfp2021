@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
 # %%
+import random
+
 from math import sin, cos
 from typing import List
 
@@ -10,9 +12,6 @@ import matplotlib.pyplot as plt
 from aray.util import ceil, floor
 from aray.types import Point
 from aray.stretch import stretch
-
-
-import random
 
 for fname in ['uniform', 'randint']:
     fn = getattr(random, fname)
@@ -35,7 +34,6 @@ for fname in ['uniform', 'randint']:
         inner_upper_ys = np.sqrt(inner**2 - (xs - center.x)**2) + center.y
         inner_lower_ys = -np.sqrt(inner**2 - (xs - center.x)**2) + center.y
 
-
         ax.set_xlim(-1, 11)
         ax.set_ylim(-1, 11)
         ax.set_xticks(range(11))
@@ -54,8 +52,8 @@ for fname in ['uniform', 'randint']:
         # print(points)
         ax.scatter([p.x for p in points], [p.y for p in points])
 
-
         # TODO: use this for checking
+
         def stretch_check(center: Point, outer_radius: float, inner_radius: float) -> List[Point]:
             """ Get the set of points that are between inner_radius and outer_radius away from center """
             # Do this the simple way, where we evaluate every single point
@@ -77,4 +75,5 @@ for fname in ['uniform', 'randint']:
 
         # check that points are the same
         assert len(points) == len(check_points)
-        assert set(points) == set(check_points), f'{set(points) - set(check_points)}'
+        assert set(points) == set(
+            check_points), f'{set(points) - set(check_points)}'

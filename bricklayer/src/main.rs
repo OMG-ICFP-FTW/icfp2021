@@ -102,7 +102,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             let problem: judge::format::Problem =
                 serde_json::from_str(&contents).expect("JSON was not well-formatted");
-            println!("{:?}", problem);
+
+            println!("{:?}", solver::solve(&problem));
 
             Ok(())
         }

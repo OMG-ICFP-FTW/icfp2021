@@ -29,7 +29,8 @@ pub fn compute_bounded_integer_points(boundary: &Polygon<f32>) -> Vec<Point<f32>
 // fn test_problem_integer_points() {
 //     use std::io::prelude::*;
 
-//     for i in 1..89 {
+//     let largest_problem_index = 106;
+//     for i in 1..largest_problem_index {
 //         let current_dir = std::env::current_dir().unwrap();
 //         let mut problem_file_path = current_dir.clone();
 //         problem_file_path.push(std::path::PathBuf::from(format!("../problems/{}.json", i)));
@@ -122,6 +123,11 @@ fn positions_to_polygon(positions: &Vec<Position>) -> Polygon<f32> {
 #[allow(unused)]
 struct WaveFunction {
     // TODO(akesling): Implement
+    // For all figure points:
+    //   For all hole slots:
+    //     For all figure points - {"root"}
+    //       All paths to a given point
+    states: BTreeMap<VertexId, BTreeMap<SlotId, BTreeMap<VertexId, BTreeSet<Vec<VertexId>>>>>
 }
 
 #[allow(unused)]
@@ -134,21 +140,24 @@ impl WaveFunction {
         panic!("Not yet implemented.")
     }
 
-    fn take_image(&self) -> WaveImage {
+    fn take_image<'function>(&'function self) -> WaveImage {
         panic!("Not yet implemented.")
     }
 }
 
 struct WaveImage {
     // TODO(akesling): Implement
+    function: std::rc::Rc<WaveFunction>,
 }
 
 #[derive(PartialOrd, Ord, PartialEq, Eq, Copy, Clone)]
 struct VertexId(u8);
+#[derive(PartialOrd, Ord, PartialEq, Eq, Copy, Clone)]
+struct SlotId(u8);
 
 #[allow(unused)]
 impl WaveImage {
-    fn collapse(&mut self, path: &Vec<VertexId>) -> WaveImage {
+    fn collapse(&self, path: &Vec<VertexId>) -> WaveImage {
         panic!("Not yet implemented.")
     }
 

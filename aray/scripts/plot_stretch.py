@@ -11,7 +11,9 @@ import matplotlib.pyplot as plt
 
 from aray.util import ceil, floor
 from aray.types import Point
-from aray.stretch import stretch
+from aray.stretch import stretch, old_stretch
+
+big_box = set(Point(x, y) for x in range(-20, 40) for y in range(-20, 40))
 
 for fname in ['uniform', 'randint']:
     fn = getattr(random, fname)
@@ -48,7 +50,9 @@ for fname in ['uniform', 'randint']:
         ax.plot(xs, inner_lower_ys, 'r-')
         ax.plot([center.x], [center.y], 'gx')
 
-        points = stretch(center, d_old, epsilon)
+        points = stretch(center, d_old, epsilon, big_box)
+        check_points = old_stretch(center, d_old, epsilon)
+        assert set(points) == set(check_points)
         # print(points)
         ax.scatter([p.x for p in points], [p.y for p in points])
 

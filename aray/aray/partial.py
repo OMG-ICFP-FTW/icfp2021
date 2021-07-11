@@ -30,23 +30,23 @@ class Partial:
         ''' Get a random unplaced point '''
         return random.choice(self.get_unplaced_points())
 
-    def get_placements_for_point(self, i: int) -> List[Point]:
+    def get_placement_for_point(self, i: int) -> List[Point]:
         ''' Get the locations that a point could be placed at '''
         # start by copying the hole set
-        placement_set = self.placement.copy()
+        placement = self.placement.copy()
         # for each edge, intersect the set with the stretch confinement
         # fig, ax = plt.subplots(figsize=(10, 10))
-        # ps = list(placement_set)
+        # ps = list(placement)
         # ax.scatter([p.x for p in ps], [p.y for p in ps])
         for e in self.edge_map[i]:
             edge = self.edges[e]
             point = self.vertices[edge.b if edge.a == i else edge.a]
             if point is not None:
-                placement_set &= set(stretch(point, self.dists[e], self.epsilon))
-                ps = list(placement_set)
+                placement = stretch(point, self.dists[e], self.epsilon, placement)
+                # ps = list(placement)
                 # ax.scatter([p.x for p in ps], [p.y for p in ps])
         # plt.show()
-        return placement_set
+        return placement
 
     def get_random_placement_for_point(self, i: int) -> Point:
         ''' Get a random placement for a point '''

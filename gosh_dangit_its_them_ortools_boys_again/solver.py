@@ -4,7 +4,7 @@ import traceback
 from time import sleep
 
 from ortools.sat.python import cp_model
-# from shapely.geometry import Polygon, Point, LineString
+from shapely.geometry import Polygon, Point, LineString
 
 import argparse
 import multiprocessing
@@ -24,6 +24,25 @@ def get_problem(problem_id):
     logging.info(f'Fetching problem {problem_id}')
     r = requests.get(problem_url(problem_id), headers=headers)
     return r.json()
+
+class ProblemCache(object):
+    def __init__(self, path):
+        self.base_dir = path
+
+    def get(self, problem_id):
+        problem_path = os.path.join(self.base_dir, f'{problem_id}.problem')
+
+        # Handle cache hit
+        if os.path.isfile(problem_path):
+            logging.info(f'Loading problem {problem_id} to from cache at {problem_path}')
+            return json.load(open(problem_path, 'r'))
+
+        # Handle cache miss
+        logging.info(f'Fetching problem {problem_id} to {problem_path}')
+        problem_json = get_problem(problem_id)
+        with open(problem_path, 'w') as f:
+            f.write(json.dumps(problem_json))
+        return problem_json
 
 def submit_url(problem_id):
     return 'http://poses.live/api/problems/{}/solutions'.format(problem_id)
@@ -303,6 +322,11 @@ if __name__ == '__main__':
                         type=int,
                         default=multiprocessing.cpu_count(),
     )
+    parser.add_argument('-c', '--problem_cache',
+                        help='Place to hold json problems',
+                        type=str,
+                        default='/tmp',
+    )
     args = parser.parse_args()
 
     # Set up logging
@@ -338,20 +362,22 @@ if __name__ == '__main__':
     # Do one problem or all
     problems = []
     if args.problem == 0:
-        problems = list(range(1, 10))
+        problems = list(range(1, 106))
     else:
         problems = [args.problem]
 
     # Fetch problem jsons
-    #
-    # TODO(myenik): Cache these for faster development
-    problem_jsons = list(map(get_problem, problems))
+    cache = ProblemCache(args.problem_cache)
+    problem_jsons = list(map(lambda p: cache.get(p), problems))
 
     # Sort problems by bounding box area
     sorted_problems = []
     for problem, pj in zip(problems, problem_jsons):
         minx, miny, maxx, maxy = bounding_box(pj)
         size = (maxx-minx)*(maxy-miny)
+        if size > 2500:
+            logging.info(f'Skipping problem {problem} due to high estimated complexity')
+            continue
         sorted_problems.append((problem, pj, size))
     sorted_problems = sorted(sorted_problems, key=lambda x: x[2])
     for problem, pj, bb_size in sorted_problems:

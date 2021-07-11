@@ -15,6 +15,7 @@ from .boxlet import Boxlet
 @dataclass
 class Partial:
     problem: Problem
+    hole: List[Point]
     vertices: List[Optional[Point]]
     edges: List[Edge]  # list of edges in the pose
     dists: List[int]  # squared distance for original edge lengths
@@ -42,7 +43,8 @@ class Partial:
             edge = self.edges[e]
             point = self.vertices[edge.b if edge.a == i else edge.a]
             if point is not None:
-                placement = stretch(point, self.dists[e], self.epsilon, placement)
+                placement = stretch(
+                    point, self.dists[e], self.epsilon, placement)
                 # ps = list(placement)
                 # ax.scatter([p.x for p in ps], [p.y for p in ps])
         # plt.show()
@@ -64,4 +66,11 @@ class Partial:
             for p in boxlet.iter_points():
                 placement.add(p)
         vertices = [None for _ in range(len(problem.vertices))]
-        return cls(problem, vertices, edges=problem.edges, dists=problem.dists, edge_map=problem.edge_map, placement=placement, epsilon=problem.epsilon)
+        return cls(problem=problem,
+                   hole=problem.hole,
+                   vertices=vertices,
+                   edges=problem.edges,
+                   dists=problem.dists,
+                   edge_map=problem.edge_map,
+                   placement=placement,
+                   epsilon=problem.epsilon)

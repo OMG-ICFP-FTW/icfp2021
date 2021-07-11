@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
 use log::error;
 
@@ -26,7 +26,7 @@ pub fn compute_bounded_integer_points(boundary: &Polygon<f32>) -> Vec<Point<f32>
 
 // #[cfg(test)]
 // #[test]
-// fn test_problem_integer_points() {
+// fn test_generate_problem_integer_points() {
 //     use std::io::prelude::*;
 
 //     let largest_problem_index = 106;
@@ -134,9 +134,65 @@ struct WaveFunction {
     states: BTreeMap<VertexId, SlotPossibilities>
 }
 
+fn compute_all_figure_graph_paths(figure: &Figure) -> BTreeMap<(VertexId, VertexId), SetOfPaths> {
+    if figure.vertices.is_empty() {
+        return BTreeMap::new();
+    }
+
+    let mut edge_map = BTreeMap::<VertexId, Vec<VertexId>>::new();
+    for edge in &figure.edges {
+        let start = VertexId(edge.start as u8);
+        let end = VertexId(edge.end as u8);
+        match edge_map.get_mut(&start) {
+            Some(neighbors) => {
+                neighbors.push(end);
+            },
+            None => {
+                edge_map.insert(start, vec![end]);
+            }
+        }
+    }
+    let edge_map = edge_map;
+
+    let mut all_paths = BTreeMap::new();
+    let mut boundary = VecDeque::<VertexId>::new();
+    let mut visited = BTreeSet::<VertexId>::new();
+    boundary.push_back(VertexId(0));
+    for node in boundary {
+        for neighbor in edge_map.get(&node).unwrap() {
+            if !all_paths.contains_key(&(node, *neighbor)) {
+                let mut single_edge_path = BTreeSet::new();
+                single_edge_path.insert(vec![node, *neighbor]);
+                all_paths.insert((node, *neighbor), single_edge_path);
+            }
+
+            for maybe_connected in &visited {
+                match all_paths.get(&(node, *maybe_connected)) {
+                    Some(node_paths) => {
+                        match all_paths.get_mut(&(node, *neighbor)) {
+                            Some(neighbor_paths) => {
+                                neighbor_paths.push();
+                            },
+                            None => {
+                                edge_map.insert(start, vec![end]);
+                            }
+                        }
+                    },
+                    None => ()
+                }
+            }
+        }
+    }
+
+    all_paths
+}
+
 #[allow(unused)]
 impl WaveFunction {
     fn from_figure_and_lattice(lattice: &[Point<f32>], figure: &Figure) -> WaveFunction {
+        // TODO(akesling): Compute all paths between points for figure graph.
+        let figure_paths = compute_all_figure_graph_paths(figure);
+
         // For all figure points:
         //   For all hole slots:
         //     For all figure points - {"root"}
@@ -149,13 +205,13 @@ impl WaveFunction {
                 let slot = SlotId(hole_slot_index as u32);
                 let mut possibilities: BTreeMap<VertexId, SetOfPaths> = BTreeMap::new();
                 for member_index in 0..figure.vertices.len() {
-                    let member = VertexId(member_index as u8);
-                    if possibilities.contains_key(&member) {
-                    } else {
-                        let mut paths: SetOfPaths = BTreeSet::new();
-                        // TODO(akesling): Actually compute paths;
-                        possibilities.insert(member, paths);
+                    if member_index == root_index {
+                        continue
                     }
+
+                    let member = VertexId(member_index as u8);
+                    let paths = figure_paths.get(&(root, member)).unwrap().clone();
+                    possibilities.insert(member, paths);
                 }
                 slot_possibilities.insert(slot, possibilities);
             }
@@ -181,9 +237,9 @@ struct WaveImage {
     function: std::rc::Rc<WaveFunction>,
 }
 
-#[derive(PartialOrd, Ord, PartialEq, Eq, Copy, Clone)]
+#[derive(PartialOrd, Ord, PartialEq, Eq, Copy, Clone, Debug)]
 struct VertexId(u8);
-#[derive(PartialOrd, Ord, PartialEq, Eq, Copy, Clone)]
+#[derive(PartialOrd, Ord, PartialEq, Eq, Copy, Clone, Debug)]
 struct SlotId(u32);
 
 #[allow(unused)]

@@ -44,8 +44,8 @@ for _ in trange(10):  # big outer loop
                 v = solution[i]
                 unplaced_points = partial.get_unplaced_points()
                 assert i in unplaced_points, f'{i} {unplaced_points}'
-                placements = partial.get_placements_for_point(i)
-                assert v in placements, f'{v} {placements}'
+                placement = partial.get_placement_for_point(i)
+                assert v in placement, f'{v} {placement}'
                 partial.place_point(i, v)
             
             assert len(partial.get_unplaced_points()) == 0, f'{partial}'

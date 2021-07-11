@@ -20,10 +20,7 @@ def problem_url(problem_id):
     return 'http://poses.live/api/problems/{}'.format(problem_id)
 
 def get_problem(problem_id):
-    headers = {'Authorization': 'Bearer {}'.format(os.environ['STEEZYKEY'])}
-    logging.info(f'Fetching problem {problem_id}')
-    r = requests.get(problem_url(problem_id), headers=headers)
-    return r.json()
+    return json.load(open(f'problems/{problem_id}.json'))
 
 class ProblemCache(object):
     def __init__(self, path):
@@ -375,7 +372,7 @@ if __name__ == '__main__':
     for problem, pj in zip(problems, problem_jsons):
         minx, miny, maxx, maxy = bounding_box(pj)
         size = (maxx-minx)*(maxy-miny)
-        if size > 2500:
+        if size > 2500 and not args.problem:
             logging.info(f'Skipping problem {problem} due to high estimated complexity')
             continue
         sorted_problems.append((problem, pj, size))

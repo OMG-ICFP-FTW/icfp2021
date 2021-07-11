@@ -194,7 +194,7 @@ def ring_options(center, r1, r2):
             result.add((center[0] + q[0], center[1] - q[1]))
             result.add((center[0] - q[0], center[1] + q[1]))
             result.add((center[0] - q[0], center[1] - q[1]))
-    return list(result)
+    return set(result)
 
 
 class partial_figure():

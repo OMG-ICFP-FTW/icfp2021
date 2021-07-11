@@ -4,12 +4,12 @@
 # %%
 import matplotlib.pyplot as plt
 import random
-from math import floor, ceil
 from collections import namedtuple, defaultdict
 from dataclasses import dataclass
 from typing import List, Optional, Tuple, Union
 
 from .types import Point
+from .util import ceil, floor
 
 
 def intersection(A: Point, B: Point, x: float) -> Point:

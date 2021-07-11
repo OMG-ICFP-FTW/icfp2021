@@ -4,7 +4,6 @@
 # %%
 import matplotlib.pyplot as plt
 import random
-from math import floor, ceil
 from collections import namedtuple, defaultdict
 from dataclasses import dataclass
 from typing import List, Optional, Tuple, Union
@@ -13,6 +12,7 @@ from aray.types import Point, Quad
 from aray.intersect import intersections, intersection, maybe_intersection
 from aray.partition import partition
 from aray.problem import Problem
+from aray.util import ceil, floor
 
 #  generate random 2d points within [0, 10]
 # polygon = [Point(random.randint(0, 10), random.randint(0, 10))

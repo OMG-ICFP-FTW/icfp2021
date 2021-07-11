@@ -29,7 +29,8 @@ pub fn compute_bounded_integer_points(boundary: &Polygon<f32>) -> Vec<Point<f32>
 // fn test_problem_integer_points() {
 //     use std::io::prelude::*;
 
-//     for i in 1..89 {
+//     let largest_problem_index = 106;
+//     for i in 1..largest_problem_index {
 //         let current_dir = std::env::current_dir().unwrap();
 //         let mut problem_file_path = current_dir.clone();
 //         problem_file_path.push(std::path::PathBuf::from(format!("../problems/{}.json", i)));
@@ -119,36 +120,75 @@ fn positions_to_polygon(positions: &Vec<Position>) -> Polygon<f32> {
     geo::Polygon::new(geo::LineString::from(coords), vec![])
 }
 
+
+type SetOfPaths = BTreeSet<Vec<VertexId>>;
+type SlotPossibilities = BTreeMap<SlotId, BTreeMap<VertexId, SetOfPaths>>;
+
 #[allow(unused)]
 struct WaveFunction {
     // TODO(akesling): Implement
+    // For all figure points:
+    //   For all hole slots:
+    //     For all figure points - {"root"}
+    //       All paths to a given point
+    states: BTreeMap<VertexId, SlotPossibilities>
 }
 
 #[allow(unused)]
 impl WaveFunction {
-    fn from_figure_and_lattice(lattice: &Vec<Point<f32>>, figure: &Figure) -> WaveFunction {
-        panic!("Not yet implemented.")
+    fn from_figure_and_lattice(lattice: &[Point<f32>], figure: &Figure) -> WaveFunction {
+        // For all figure points:
+        //   For all hole slots:
+        //     For all figure points - {"root"}
+        //       All paths to a given point
+        let mut root_map: BTreeMap<VertexId, SlotPossibilities> = BTreeMap::new();
+        for root_index in 0..figure.vertices.len() {
+            let root = VertexId(root_index as u8);
+            let mut slot_possibilities: SlotPossibilities = BTreeMap::new();
+            for hole_slot_index in 0..lattice.len() {
+                let slot = SlotId(hole_slot_index as u32);
+                let mut possibilities: BTreeMap<VertexId, SetOfPaths> = BTreeMap::new();
+                for member_index in 0..figure.vertices.len() {
+                    let member = VertexId(member_index as u8);
+                    if possibilities.contains_key(&member) {
+                    } else {
+                        let mut paths: SetOfPaths = BTreeSet::new();
+                        // TODO(akesling): Actually compute paths;
+                        possibilities.insert(member, paths);
+                    }
+                }
+                slot_possibilities.insert(slot, possibilities);
+            }
+            root_map.insert(root, slot_possibilities);
+        }
+
+        WaveFunction {
+            states: root_map,
+        }
     }
 
     fn remove_derivative_images(&mut self, image: &WaveImage) -> Result<(), String> {
         panic!("Not yet implemented.")
     }
 
-    fn take_image(&self) -> WaveImage {
+    fn take_image<'function>(&'function self) -> WaveImage {
         panic!("Not yet implemented.")
     }
 }
 
 struct WaveImage {
     // TODO(akesling): Implement
+    function: std::rc::Rc<WaveFunction>,
 }
 
 #[derive(PartialOrd, Ord, PartialEq, Eq, Copy, Clone)]
 struct VertexId(u8);
+#[derive(PartialOrd, Ord, PartialEq, Eq, Copy, Clone)]
+struct SlotId(u32);
 
 #[allow(unused)]
 impl WaveImage {
-    fn collapse(&mut self, path: &Vec<VertexId>) -> WaveImage {
+    fn collapse(&self, path: &Vec<VertexId>) -> WaveImage {
         panic!("Not yet implemented.")
     }
 

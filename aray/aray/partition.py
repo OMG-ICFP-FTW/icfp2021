@@ -4,14 +4,13 @@
 # %%
 import matplotlib.pyplot as plt
 import random
-from math import floor, ceil
 from collections import namedtuple, defaultdict
 from dataclasses import dataclass
 from typing import List, Optional, Tuple, Union
 
 from .types import Point, Quad
 from .intersect import intersections, intersection, maybe_intersection
-
+from .util import floor, ceil
 
 def partition(points: List[Point]):
     """ Partition a simple polygon into a list of Quads """

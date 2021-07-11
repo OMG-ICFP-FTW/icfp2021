@@ -4,12 +4,13 @@
 # %%
 import os
 import json
-from dataclasses import dataclass, fields
-from typing import List
-from collections import namedtuple
+from dataclasses import dataclass
+from typing import List, Set, Dict, Optional
+from collections import defaultdict
+import requests
 
-Point = namedtuple('Point', ['x', 'y'])
-Edge = namedtuple('Edge', ['a', 'b'])
+from .types import Point, Edge
+from .util import dist
 
 
 # Path of 'icfp2021' directory
@@ -17,23 +18,50 @@ BASE_PATH = base = os.path.dirname(os.path.dirname(
     os.path.dirname(os.path.realpath(__file__))))
 
 
+def get_problem_json_path(i: int) -> str:
+    filename = os.path.join(BASE_PATH, 'problems', f'{i}.json')
+    # if it doesn't exist, download it
+    if not os.path.exists(filename):
+        print(f'Downloading problem {i}')
+        TEAM_NAME = "OMG ICFP FTW"
+        YOUR_API_TOKEN = "b5d3e724-0d12-4926-b223-e9cd180c3003"
+        headers = {"Authorization": "Bearer " + YOUR_API_TOKEN}
+        r = requests.get(
+            f"https://poses.live/api/problems/{i}", headers=headers)
+        r.raise_for_status()
+        data = r.json()
+        # Write data to file
+        with open(filename, 'w') as f:
+            json.dump(data, f)
+    return filename
+
+
 @dataclass
 class Problem:
     hole: List[Point]
-    vertices: List[Point]
-    edges: List[Edge]
+    vertices: List[Point]  # original vertices
+    edges: List[Edge]  # list of edges in the pose
+    dists: List[int]  # squared distance for original edge lengths
+    edge_map: Dict[int, List[int]]  # map vertex index -> list of edge indexes
     epsilon: int
 
     @classmethod
     def get(cls, number):
-        filename = os.path.join(BASE_PATH, 'problems', f'{number}.json')
+        filename = get_problem_json_path(number)
         with open(filename, 'r') as f:
             data = json.load(f)
         hole = [Point(x, y) for x, y in data['hole']]
         vertices = [Point(x, y) for x, y in data['figure']['vertices']]
         edges = [Edge(a, b) for a, b in data['figure']['edges']]
+        dists = [dist(vertices[a], vertices[b]) for a, b in edges]
+        edge_map = defaultdict(list)
+        for i, edge in enumerate(edges):
+            edge_map[edge.a].append(i)
+            edge_map[edge.b].append(i)
+        # convert to normal dict
+        edge_map = {k: list(v) for k, v in edge_map.items()}
         epsilon = int(data['epsilon'])
-        return cls(hole, vertices, edges, epsilon)
+        return cls(hole, vertices, edges, dists, edge_map, epsilon)
 
     def json(self):
         return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
@@ -42,6 +70,14 @@ class Problem:
 @dataclass
 class Pose:
     vertices: List[Point]
+    dislikes: Optional[int] = None
+
+    @classmethod
+    def from_json(cls, data, dislikes=None):
+        assert isinstance(data, dict), f'{data} is not a dict'
+        assert tuple(data.keys()) == ('vertices',), f'{data} is not a pose'
+        vertices = [Point(x, y) for x, y in data['vertices']]
+        return cls(vertices, dislikes=dislikes)
 
     def json(self):
         return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)

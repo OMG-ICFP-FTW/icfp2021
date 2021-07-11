@@ -4,11 +4,11 @@
 # %%
 import matplotlib.pyplot as plt
 import random
-from math import floor, ceil
 from collections import namedtuple, defaultdict
 from dataclasses import dataclass
 from typing import List, Optional, Tuple, Union
 
+from .util import floor, ceil
 from .types import Point, Quad
 from .intersect import intersections
 from .partition import partition

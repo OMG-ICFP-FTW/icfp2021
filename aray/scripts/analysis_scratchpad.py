@@ -69,3 +69,34 @@ for i in unsolved.keys():
 pairs.sort(key=lambda pair: pair[1])
 for i, v in pairs:
     print(f'Problem {i}: {v} vertices')
+
+# %%
+problem = Problem.get(51)
+len(problem.vertices)
+
+# plot vertices
+points = problem.vertices
+xs = [p.x for p in points]
+ys = [p.y for p in points]
+plt.scatter(xs, ys)
+
+# flip y axis
+plt.gca().invert_yaxis()
+
+inner = [4, 7, 10]
+xs = [points[i].x for i in inner]
+ys = [points[i].y for i in inner]
+plt.scatter(xs, ys)
+
+highlight = [0]
+plt.scatter([points[i].x for i in highlight], [points[i].y for i in highlight])
+
+
+# %%
+points = problem.hole + [problem.hole[0]]
+
+plt.plot([p.x for p in points], [p.y for p in points])
+plt.gca().invert_yaxis()
+
+i = 1
+plt.scatter([points[i].x], [points[i].y])

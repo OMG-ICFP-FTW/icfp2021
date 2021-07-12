@@ -6,7 +6,7 @@ from tqdm import tqdm
 from aray.types import Point, Edge
 from aray.problem import Problem, Pose
 from aray.boxlet import polygon_points
-from aray.stretch import delta_stretch, center_stretch
+from aray.stretch import delta_stretch
 from aray.dislike import dislikes
 from aray.util import dist
 from aray.forbidden import get_forbidden

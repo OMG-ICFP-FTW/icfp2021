@@ -5,8 +5,23 @@
 from math import sin, cos
 from typing import List, Set
 
-from .util import ceil, floor
+from .util import ceil, floor, dist
 from .types import Point
+
+
+def slow_stretch(a: Point, b: Point, epsilon: int) -> List[Point]:
+    """ Get the valid set of deltas for a given old squared distance """
+    # Deltas are just points centred on the origin
+    d = dist(a, b)
+    n = ceil(d ** .5 + 1)
+    center = Point(0, 0)
+    points = []
+    for x in range(-n, n + 1):
+        for y in range(-n, n + 1):
+            p = Point(x, y)
+            if abs(dist(center, Point(x, y))/d - 1) <= epsilon / 1_000_000:
+                points.append(Point(x, y))
+    return points
 
 
 def stretch(start: Point, d_old: int, epsilon: int, placement: Set[Point]) -> Set[Point]:

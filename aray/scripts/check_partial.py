@@ -17,9 +17,9 @@ from tqdm.notebook import trange
 
 for _ in trange(10):  # big outer loop
     # match files like '{problem_number}-{score_number}-{string}.json'
-    FILENAME_REGEX = re.compile(r'(\d+)-(\d+)-(.+).json')
+    FILENAME_REGEX = re.compile(r'(\d+)-(\d+)-cpsolver.json')
 
-    solutions = os.path.join(BASE_PATH, 'solutions')
+    solutions = os.path.join(BASE_PATH, 'candidates')
     scores = {}  # map from problem_number -> score_number
     poses = {}  # map from problem_number -> Pose
     problems = {}  # map from problem_number -> Problem

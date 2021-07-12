@@ -76,7 +76,7 @@ class Pose:
         assert isinstance(data, dict), f'{data} is not a dict'
         assert tuple(data.keys()) == ('vertices',), f'{data} is not a pose'
         vertices = [Point(x, y) for x, y in data['vertices']]
-        return cls(vertices, dislikes=dislikes)
+        return cls(vertices)
 
     def json(self):
         return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)

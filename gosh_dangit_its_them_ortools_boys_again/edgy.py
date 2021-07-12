@@ -25,7 +25,25 @@ def intersect(a: Point, b: Point, c: Point, d: Point) -> bool:
     return orient(a, b, c) != orient(a, b, d) and orient(c, d, a) != orient(c, d, b)
 
 
-def get_solution(problem_number):
+class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
+    """Print intermediate solutions."""
+
+    def __init__(self, variables):
+        cp_model.CpSolverSolutionCallback.__init__(self)
+        self.__variables = variables
+        self.__solution_count = 0
+
+    def on_solution_callback(self):
+        self.__solution_count += 1
+        for v in self.__variables:
+            print('%s=%i' % (v, self.Value(v)), end=' ')
+        print()
+
+    def solution_count(self):
+        return self.__solution_count
+
+
+def get_solution(problem_number, timeout_seconds=100.0, zero=False):
     model = cp_model.CpModel()
 
     problem = Problem.get(problem_number)
@@ -74,8 +92,22 @@ def get_solution(problem_number):
             forbid.add((bx, by, ax, ay))
         model.AddForbiddenAssignments(vars, sorted(forbid))
 
+    # Hole == 0 
+    if zero:
+        for i, h in enumerate(problem.hole):
+            vars = []
+            for j, p in enumerate(pose):
+                var = model.NewBoolVar(f'H{i}_{j}')
+                model.Add(p.x == h.x).OnlyEnforceIf(var)
+                model.Add(p.y == h.y).OnlyEnforceIf(var)
+                vars.append(var)
+            model.AddBoolOr(vars)
+
     # Creates a solver and solves the model.
+    print('ready to solve!')
     solver = cp_model.CpSolver()
+    solver.parameters.max_time_in_seconds = timeout_seconds
+    print('Solving')
     status = solver.Solve(model)
 
     print('status =', solver.StatusName(status))
@@ -96,5 +128,10 @@ def get_solution(problem_number):
 
 
 if __name__ == '__main__':
-    import sys
-    get_solution(int(sys.argv[1]))
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('problem_number', type=int)
+    parser.add_argument('-t', '--timeout', type=float, default=1000.0)
+    parser.add_argument('-z', '--zero', action='store_true')
+    args = parser.parse_args()
+    get_solution(args.problem_number, args.timeout, args.zero)

@@ -13,17 +13,6 @@ from aray.forbidden import get_forbidden
 from ortools.sat.python import cp_model
 
 
-def orient(p: Point, q: Point, r: Point):
-    ''' Get orientation of triangle pqr (Collinear, Clockwise, Counterclockwise) '''
-    val = (q.y - p.y) * (r.x - q.x) - (q.x - p.x) * (r.y - q.y)
-    return 0 if val == 0 else (1 if val > 0 else 2)
-
-
-def intersect(a: Point, b: Point, c: Point, d: Point) -> bool:
-    ''' Return True if segments a-b and c-d have a crossing intersection '''
-    # https://www.geeksforgeeks.org/check-if-two-given-line-segments-intersect/
-    return orient(a, b, c) != orient(a, b, d) and orient(c, d, a) != orient(c, d, b)
-
 
 class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
     """Print intermediate solutions."""

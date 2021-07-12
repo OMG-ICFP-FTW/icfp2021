@@ -13,6 +13,7 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <time.h>
 
 #include <SDL.h>
 #include <curl/curl.h>
@@ -175,6 +176,11 @@ struct Vec {
     const Vec dir = norm();
     return {m*dir.x, m*dir.y};;
   }
+};
+
+struct Force {
+  Vec net;
+  float total;
 };
 
 using Points = std::vector<Point>;
@@ -532,7 +538,7 @@ struct Canvas {
   void DrawFrame(const Points& poly, const Points& qpose,
                  const std::vector<Vec>& pose,
                  const std::vector<Edge>& edges,
-                 const std::vector<Vec>& forces) {
+                 const std::vector<Force>& forces) {
     // Clear to bg color
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
     SDL_RenderClear(renderer);
@@ -570,14 +576,18 @@ struct Canvas {
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
     for (int i = 0; i < pose.size(); ++i) {
       auto p1 = p2px(pose[i]);
-      auto f = f2px(forces[i]);
+      auto f = f2px(forces[i].net);
       Vec p2 = {p1.x + f.x, p1.y + f.y};
 
       SDL_Rect r;
-      r.x = p1.x-5;
-      r.y = p1.y-5;
-      r.w = 10;
-      r.h = 10;
+      int mag = std::sqrt(forces[i].total*10);
+      if (mag < 2) {
+        mag = 2;
+      }
+      r.x = p1.x-mag/2;
+      r.y = p1.y-mag/2;
+      r.w = mag;
+      r.h = mag;
       SDL_RenderFillRect(renderer, &r);
 
       SDL_RenderDrawLine(renderer, p1.x, p1.y, p2.x, p2.y);
@@ -625,16 +635,22 @@ std::unique_ptr<Canvas> MakeCanvas(int bb_size, int px_size) {
 struct Annealer {
   float nudge_factor;
   int budget;
+  Vec wind;
   std::unique_ptr<Solution> solution;
 
-  Annealer(float f, int b) : nudge_factor(f), budget(b), solution(nullptr) {}
+  Annealer(float f, int b) : nudge_factor(f), budget(b), solution(nullptr), wind({0.0f, 0.0f}) {}
 };
 
-Vec ComputeForce(const Problem& problem,
-                 const std::vector<Vec>& pose,
-                 const Points& qpose,
-                 uint32_t vid) {
-  Vec force = {0.0f, 0.0f};
+Force ComputeForce(const Problem& problem,
+                   const std::vector<Vec>& pose,
+                   const Points& qpose,
+                   Annealer& a,
+                   uint32_t vid) {
+  Force force = {{0.0f, 0.0f}, 0.0f};
+  force.net.x += a.wind.x;
+  force.net.y += a.wind.y;
+  force.total += a.wind.mag();
+
   const auto& connections = problem.connections[vid];
   const Vec& v1 = pose[vid];
   const Point& p1 = qpose[vid];
@@ -660,24 +676,37 @@ Vec ComputeForce(const Problem& problem,
       direction = {problem.hole[hid].x - v1.x, problem.hole[hid].y - v1.y};
     }
     direction = direction.norm();
-    force.x += direction.x*stretch;
-    force.y += direction.y*stretch;
+    force.net.x += direction.x*stretch;
+    force.net.y += direction.y*stretch;
+    force.total += stretch;
 
-    // if (SegmentIntersectsHole(problem.hole, v1.quantize(), v2.quantize())) {
-    //   Vec to_center = {problem.center.x - v1.x, problem.center.y - v1.y};
-    //   force.x += to_center.x;
-    //   force.y += to_center.y;
-    // }
+
+    float randx = 0.01f*(rand()%100 - 50);
+    float randy = 0.01f*(rand()%100 - 50);
+    force.net.x += randx;
+    force.net.y += randy;
+    // force.total += stretch;
+
+    if (SegmentIntersectsHole(problem.hole, v1.quantize(), v2.quantize())) {
+      Vec to_center = {problem.center.x - v1.x, problem.center.y - v1.y};
+      // force.x += to_center.x;
+      // force.y += to_center.y;
+      float wigglex = 0.1f*(rand()%100 - 50);
+      float wiggley = 0.1f*(rand()%100 - 50);
+      force.net.x += wigglex;
+      force.net.y += wiggley;
+    }
   }
 
   // If we're outside the hole, try to come back in
   if (!PointInPolygon(p1, problem.hole)) {
     Vec to_center = {problem.center.x - v1.x, problem.center.y - v1.y};
-    force.x += to_center.x;
-    force.y += to_center.y;
+    force.net.x += 10.0f*to_center.x;
+    force.net.y += 10.0f*to_center.y;
+    force.total += to_center.mag();
   }
 
-  force = force.cronch();
+  force.net = force.net.cronch();
   // if (force.mag() > 10) {
   //   std::cout << "wtf, big force (" << force.x << ", " << force.y << ")" << std::endl;
   // }
@@ -687,17 +716,26 @@ Vec ComputeForce(const Problem& problem,
 void UpdateForces(const Problem& problem,
                   const std::vector<Vec>& pose,
                   const Points& qpose,
-                  std::vector<Vec>& forces) {
+                  Annealer& a,
+                  std::vector<Force>& forces) {
   for (size_t i = 0; i < pose.size(); ++i) {
-    Vec force = ComputeForce(problem, pose, qpose, i);
+    auto force = ComputeForce(problem, pose, qpose, a, i);
     forces[i] = force;
   }
+}
+
+Vec NewWind() {
+  float randx = 0.1f*(rand()%10 - 5);
+  float randy = 0.1f*(rand()%10 - 5);
+  return {randx, randy};
 }
 
 void Anneal(const Problem& problem, Annealer& a, Canvas* canvas) {
   // Lay out initial pose
   std::vector<Vec> pose;
   Points qpose;
+
+  a.wind = NewWind();
 
   for (const auto& p : problem.verts) {
     // std::cout << "Initial vert (" << p.x << "," << p.y << ")" << std::endl;
@@ -721,10 +759,10 @@ void Anneal(const Problem& problem, Annealer& a, Canvas* canvas) {
   }
 
   // Keep all forces, for drawing the debug view
-  std::vector<Vec> forces;
+  std::vector<Force> forces;
   forces.resize(problem.verts.size());
 
-  UpdateForces(problem, pose, qpose, forces);
+  UpdateForces(problem, pose, qpose, a, forces);
 
   // Maybe draw for debugging
   if (canvas != nullptr) {
@@ -733,18 +771,31 @@ void Anneal(const Problem& problem, Annealer& a, Canvas* canvas) {
 
   // Iterate until tries exhausted
   while (a.budget-- != 0) {
+    // Update wind periodically
+    if (a.budget%1000 == 0) {
+      a.wind = NewWind();
+    }
+
     // Apply forces
     for (size_t i = 0; i < pose.size(); ++i) {
-      const Vec& force = forces[i];
+      const auto& force = forces[i];
       // std::cout << string_format("nudged (%f, %f)", pose[i].x, pose[i].y);
-      pose[i].x += a.nudge_factor*force.x;
-      pose[i].y += a.nudge_factor*force.y;
+      const float net_mag = force.net.mag();
+      if (force.total > 10.0f*net_mag && net_mag < 0.05f) {
+        const int random_idx = rand()%problem.hole.size();
+        const Point& rp = problem.hole[random_idx];
+        pose[i].x = rp.x;
+        pose[i].y = rp.y;
+      } else {
+        pose[i].x += a.nudge_factor*force.net.x;
+        pose[i].y += a.nudge_factor*force.net.y;
+      }
       // std::cout << string_format("--> (%f, %f)", pose[i].x, pose[i].y) << std::endl;
       qpose[i] = pose[i].quantize();
     }
 
     // Compute next forces
-    UpdateForces(problem, pose, qpose, forces);
+    UpdateForces(problem, pose, qpose, a, forces);
 
     // Maybe draw for debugging
     if (canvas != nullptr) {
@@ -762,7 +813,7 @@ void Anneal(const Problem& problem, Annealer& a, Canvas* canvas) {
 }
 
 std::unique_ptr<Solution> Anneal(const Problem& problem, Canvas* canvas) {
-  Annealer a(0.30f, 10000000);
+  Annealer a(0.80f, 10000000);
   Anneal(problem, a, canvas);
 
   if (a.solution) {
@@ -848,6 +899,7 @@ void DoMain(const std::vector<int>& problems, int threads, int generations) {
 }
 
 int main(int argc, char** argv) {
+  srand(time(nullptr));
 
   bool sdl = false;
   bool dolist = false;

@@ -9,13 +9,17 @@
 #include <iostream>
 #include <thread>
 #include <stdexcept>
+#include <sstream>
 
 #include <stdint.h>
 #include <stdlib.h>
 
 #include <SDL.h>
+#include <curl/curl.h>
 
 #include "json.h"
+
+using json = nlohmann::json;
 
 template<typename ... Args>
 std::string string_format( const std::string& format, Args ... args )
@@ -28,10 +32,104 @@ std::string string_format( const std::string& format, Args ... args )
   return std::string( buf.get(), buf.get() + size - 1 ); // We don't want the '\0' inside
 }
 
-// #include <curl/curl.h>
+std::vector<std::string> string_split(std::string s, std::string delimiter) {
+  size_t pos_start = 0, pos_end, delim_len = delimiter.length();
+  std::string token;
+  std::vector<std::string> res;
 
-using json = nlohmann::json;
+  while ((pos_end = s.find (delimiter, pos_start)) != std::string::npos) {
+    token = s.substr(pos_start, pos_end - pos_start);
+    pos_start = pos_end + delim_len;
+    res.push_back(token);
+  }
 
+  res.push_back(s.substr(pos_start));
+  return res;
+}
+
+std::vector<int> parse_csv(const std::string &s) {
+  char delim = ',';
+  std::vector<int> result;
+  std::stringstream ss(s);
+  std::string item;
+
+  while (getline(ss, item, delim)) {
+    result.push_back(atoi(item.c_str()));
+  }
+
+  return result;
+}
+
+size_t writeFunction(void *ptr, size_t size, size_t nmemb, std::string* data) {
+    data->append((char*) ptr, size * nmemb);
+    return size * nmemb;
+}
+
+std::string GetProblem(int problem_id) {
+  std::string response_string;
+  auto curl = curl_easy_init();
+  if (curl) {
+    auto get_url = string_format("https://poses.live/api/problems/%d", problem_id);
+    curl_easy_setopt(curl, CURLOPT_URL, get_url.c_str());
+
+    auto auth_header = string_format("Authorization: Bearer %s", std::getenv("STEEZYKEY"));
+    struct curl_slist* headers = NULL;
+    headers = curl_slist_append(headers, auth_header.c_str());
+    headers = curl_slist_append(headers, "Content-Type: application/json");
+    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+
+    std::string header_string;
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeFunction);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response_string);
+    curl_easy_setopt(curl, CURLOPT_HEADERDATA, &header_string);
+
+    char* url;
+    long response_code;
+    double elapsed;
+    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
+    curl_easy_getinfo(curl, CURLINFO_TOTAL_TIME, &elapsed);
+    curl_easy_getinfo(curl, CURLINFO_EFFECTIVE_URL, &url);
+
+    curl_easy_perform(curl);
+    curl_easy_cleanup(curl);
+    curl = NULL;
+  }
+  return response_string;
+}
+
+std::string SubmitProblem(int problem_id, const std::string& data) {
+  std::string response_string;
+  auto curl = curl_easy_init();
+  if (curl) {
+    auto get_url = string_format("https://poses.live/api/problems/%d/solutions", problem_id);
+    curl_easy_setopt(curl, CURLOPT_URL, get_url.c_str());
+
+    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, data.c_str());
+
+    auto auth_header = string_format("Authorization: Bearer %s", std::getenv("STEEZYKEY"));
+    struct curl_slist* headers = NULL;
+    headers = curl_slist_append(headers, auth_header.c_str());
+    headers = curl_slist_append(headers, "Content-Type: application/json");
+    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+
+    std::string header_string;
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeFunction);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response_string);
+    curl_easy_setopt(curl, CURLOPT_HEADERDATA, &header_string);
+
+    char* url;
+    long response_code;
+    double elapsed;
+    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
+    curl_easy_getinfo(curl, CURLINFO_TOTAL_TIME, &elapsed);
+    curl_easy_getinfo(curl, CURLINFO_EFFECTIVE_URL, &url);
+
+    curl_easy_perform(curl);
+    curl_easy_cleanup(curl);
+    curl = NULL;
+  }
+  return response_string;
+}
 struct Point {
   int16_t x;
   int16_t y;
@@ -608,8 +706,13 @@ void Anneal(const Problem& problem, Annealer& a, Canvas* canvas) {
     // pose.push_back({(float)p.x, (float)p.y});
     // qpose.push_back(p);
 
-    const int random_idx = rand()%problem.points_in_hole.size();
-    const Point& rp = problem.points_in_hole[random_idx];
+    // const int random_idx = rand()%problem.points_in_hole.size();
+    // const Point& rp = problem.points_in_hole[random_idx];
+    // pose.push_back({(float)rp.x, (float)rp.y});
+    // qpose.push_back(rp);
+
+    const int random_idx = rand()%problem.hole.size();
+    const Point& rp = problem.hole[random_idx];
     pose.push_back({(float)rp.x, (float)rp.y});
     qpose.push_back(rp);
 
@@ -691,17 +794,17 @@ std::unique_ptr<Solution> Search(const Problem& problem, int num_threads, int it
     for (int t = 0; t < num_threads; ++t) {
       threads[t].join();
       if (annealers[t].solution) {
-        std::cout << "ayy lmao worker " << t
-                  << " found a solution, dislikes: "
-                  << annealers[t].solution->dislikes << std::endl;
+        // std::cout << "ayy lmao worker " << t
+        //           << " found a solution, dislikes: "
+        //           << annealers[t].solution->dislikes << std::endl;
         if (!best || best->dislikes > annealers[t].solution->dislikes) {
           std::cout << "new best solution, dislikes: "
                     << annealers[t].solution->dislikes << std::endl;
           best = std::move(annealers[t].solution);
         }
       } else {
-        std::cout << "worker " << t
-                  << " has FAILED US, WHY HAS GOD FORSAKEN US" << std::endl;
+        // std::cout << "worker " << t
+        //           << " has FAILED US, WHY HAS GOD FORSAKEN US" << std::endl;
       }
     }
   }
@@ -716,9 +819,38 @@ std::string ReadFile(const char* fname) {
   return str;
 }
 
+json SolutionToJson(const Solution& s) {
+  json j;
+  j["vertices"] = json::array();
+  for (int i = 0; i < s.assigned.size(); ++i) {
+    const auto& p = s.assigned[i];
+    j["vertices"].push_back(json::array());
+    j["vertices"][i].push_back(p.x);
+    j["vertices"][i].push_back(p.y);
+  }
+  return j;
+}
+
+void DoMain(const std::vector<int>& problems, int threads, int generations) {
+  for (int problem_id : problems) {
+    std::string json_str = GetProblem(problem_id);
+    auto problem = ProblemFromJson(json_str);
+    auto best = Search(problem, threads, generations);
+    if (best) {
+      std::cout << "Best solution for problem " << problem_id << " has "
+                << best->dislikes << " dislikes" << std::endl;
+      json j = SolutionToJson(*best);;
+      const auto data = j.dump();
+      std::cout << "POST: " << data << std::endl;
+      std::cout << SubmitProblem(problem_id, data) << std::endl;
+    }
+  }
+}
+
 int main(int argc, char** argv) {
 
   bool sdl = false;
+  bool dolist = false;
   const char* fname;
   if (argc == 3) {
     if (argv[1][0] == 'd') {
@@ -729,8 +861,18 @@ int main(int argc, char** argv) {
   if (argc == 2) {
     fname = argv[1];
   }
+  if (argc == 4) {
+    int threads = atoi(argv[1]);
+    int generations = atoi(argv[2]);
+    auto problems = parse_csv(argv[3]);
+    DoMain(problems, threads, generations);
+    return 0;
+  }
 
-  auto json_str = ReadFile(fname);
+  //auto json_str = ReadFile(fname);
+  std::string json_str;
+  json_str = ReadFile(fname);
+
   auto problem = ProblemFromJson(json_str);
 
   auto bb_largest_side_plus_padding = std::max(problem.max.x, problem.max.y) + 2;
@@ -746,17 +888,11 @@ int main(int argc, char** argv) {
     return 0;
   }
 
-  auto best = Search(problem, 8, 100);
+  auto best = Search(problem, 8, 20);
   if (best) {
-    json j;
+    std::cout << "Best solution has " << best->dislikes << " dislikes" << std::endl;
 
-    j["vertices"] = json::array();
-    for (int i = 0; i < best->assigned.size(); ++i) {
-      const auto& p = best->assigned[i];
-      j["vertices"].push_back(json::array());
-      j["vertices"][i].push_back(p.x);
-      j["vertices"][i].push_back(p.y);
-    }
+    json j = SolutionToJson(*best);;
 
     std::ofstream file("/tmp/solution.json");
     file << j;

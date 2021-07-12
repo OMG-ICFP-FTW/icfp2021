@@ -160,3 +160,7 @@ cython_debug/
 
 # pyenv
 .python-version
+
+# steezy binaries
+cc_gang/steez
+cc_gang/curltest

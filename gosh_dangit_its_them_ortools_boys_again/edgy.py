@@ -87,7 +87,7 @@ def get_solution(problem_number):
     score = dislikes(problem.hole, vertices)
     print('score', score)
     # def dislikes(hole: List[Point], points: List[Point]) -> int:
-    filename = f'/tmp/{problem_number}-{score}-cpsolver.json'
+    filename = f'/tmp/{problem_number}-{score}-cpsolver2.json'
     with open(filename, 'w') as f:
         points = [[p.x, p.y] for p in vertices]
         data = dict(vertices=vertices)

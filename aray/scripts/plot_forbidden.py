@@ -1,25 +1,27 @@
 #!/usr/bin/env python
 
 # %%
+import os
+import json
 import matplotlib.pyplot as plt
 from aray.types import Pair, Point
-from aray.forbidden import forbidden
+from aray.forbidden import get_forbidden
 from aray.problem import Problem
 from aray.boxlet import polygon_points
 
-problem = Problem.get(1)
+problem_number = 19
+problem = Problem.get(problem_number)
 
 vertices = problem.vertices
 edges = [Pair(vertices[a], vertices[b]) for a, b in problem.edges]
-# edges = [Pair(Point(0, 0), Point(0, 5))]
-forbidden_edges = forbidden(problem.hole, edges, problem.epsilon)
+forbidden_edges = get_forbidden(problem_number)
 
-
+# %%
 points = list(polygon_points(problem.hole))
 plt.scatter([p.x for p in points], [p.y for p in points], s=1)
 
-for pairs in forbidden_edges:
-    for a, b in pairs:
+for pairs, _ in zip(forbidden_edges, range(1000)):
+    for (a, b), _ in zip(pairs, range(1000)):
         plt.plot([a.x, b.x], [a.y, b.y], 'b-', linewidth=0.5)
 
 cycle = problem.hole + [problem.hole[0]]

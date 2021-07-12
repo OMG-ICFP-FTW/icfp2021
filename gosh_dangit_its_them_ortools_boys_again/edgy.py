@@ -9,6 +9,7 @@ from aray.boxlet import polygon_points
 from aray.stretch import delta_stretch, center_stretch
 from aray.dislike import dislikes
 from aray.util import dist
+from aray.forbidden import get_forbidden
 from ortools.sat.python import cp_model
 
 
@@ -47,6 +48,7 @@ def get_solution(problem_number):
         pose.append(Point(xvar, yvar))
         # Add constraint that vertex is inside placement
         model.AddAllowedAssignments([xvar, yvar], placement)
+    assert len(pose) == len(problem.vertices)
 
     edges = []
     for i, (a, b) in enumerate(problem.edges):
@@ -60,54 +62,17 @@ def get_solution(problem_number):
         Pa, Pb = problem.vertices[a], problem.vertices[b]
         circle = sorted((p.x, p.y) for p in delta_stretch(Pa, Pb, epsilon))
         model.AddAllowedAssignments([xvar, yvar], circle)
+    assert len(edges) == len(problem.edges)
 
-    # precompute hole edge x and y margins
-    hole = problem.hole  # list of points
-    hole_edges = [(hole[i], hole[(i + 1) % len(hole)])
-                  for i in range(len(hole))]
-    hole_edges_x = defaultdict(set)  # map from x coordinate to hole edge index
-    hole_edges_y = defaultdict(set)  # map from y coordinate to hole edge index
-    for i, (u, v) in enumerate(hole_edges):
-        for x in range(min(u.x, v.x), max(u.x, v.x) + 1):
-            hole_edges_x[x].add(i)
-        for y in range(min(u.y, v.y), max(u.y, v.y) + 1):
-            hole_edges_y[y].add(i)
-
-    # precompute edge distances
-    distances = defaultdict(list)  # map from distance -> list of edge indexes
-    for i, (a, b) in enumerate(problem.edges):
-        distances[dist(problem.vertices[a], problem.vertices[b])].append(i)
-    print('distances', distances)
-
-    # big computation, add concavity exclusions for every edge
-    forbidden = defaultdict(set)  # map from distance -> tuple of forbidden point assignments
-    for d, edge_idxs in distances.items():  # only do this for unique distances
-        print('distance', d, 'edges', edge_idxs)
-        circle = center_stretch(d, epsilon)  # set of points in the distance circle
-        print('placement size', len(placement))
-        for ax, ay in tqdm(placement):  # start for every valid point in placement
-            a = Point(ax, ay)
-            for c in circle:  # for every delta in our valid circle points
-                b = Point(a.x + c.x, a.y + c.y)  # get our end coordinate
-                if b not in placement: # both ends must be inside placement
-                    continue
-                # if opposite corners are valid
-                # get all of the hole edges to consider intersecting with a, b
-                hole_edge_idxs = set()
-                for x in range(min(a.x, b.x), max(a.x, b.x) + 1):
-                    hole_edge_idxs.update(hole_edges_x[x])
-                for y in range(min(a.y, b.y), max(a.y, b.y) + 1):
-                    hole_edge_idxs.update(hole_edges_y[y])
-                # for each hole edge, check for intersection
-                for i in hole_edge_idxs:
-                    u, v = hole_edges[i]  # indexes to hole points
-                    if intersect(a, b, u, v):
-                        forbidden[d].add((a.x, a.y, b.x, b.y))
-                        forbidden[d].add((b.x, b.y, a.x, a.y))
-    print('forbidden', forbidden)
-    
-
-    assert False
+    forbidden_edges = get_forbidden(problem_number)
+    assert len(forbidden_edges) == len(edges), f'{len(forbidden_edges)} {len(edges)}'
+    for f, (a, b) in zip(forbidden_edges, problem.edges):
+        vars = [pose[a].x, pose[a].y, pose[b].x, pose[b].y]
+        forbid = set()
+        for (ax, ay), (bx, by) in f:
+            forbid.add((ax, ay, bx, by))
+            forbid.add((bx, by, ax, ay))
+        model.AddForbiddenAssignments(vars, sorted(forbid))
 
     # Creates a solver and solves the model.
     solver = cp_model.CpSolver()

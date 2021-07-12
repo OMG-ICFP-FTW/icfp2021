@@ -91,21 +91,23 @@ def forbidden(hole: List[Point], edges: List[Pair], epsilon: int) -> List[List[P
     return forbidden_edges
 
 
+def get_forbidden(problem_number):
+    filepath = f'/tmp/{problem_number}-forbidden.json'
+    if not os.path.exists(filepath):
+        problem = Problem.get(problem_number)
+        vertices = problem.vertices
+        edges = [Pair(vertices[a], vertices[b]) for a, b in problem.edges]
+        forbidden_edges = forbidden(problem.hole, edges, problem.epsilon)
+        with open(filepath, 'w') as f:
+            json.dump(forbidden_edges, f)
+        print('wrote', filepath)
+    with open(filepath, 'r') as f:
+        data = json.load(f) 
+    # need to convert back to pairs
+    return [[Pair(Point(*a), Point(*b)) for a, b in d] for d in data]
+
+
 if __name__ == '__main__':
     import sys
-    from aray.boxlet import polygon_points
     problem_number = int(sys.argv[1])
-    filepath = f'/tmp/{problem_number}-forbidden.json'
-    # bail if file exists
-    if os.path.exists(filepath):
-        print('file already exists:', filepath)
-        exit(1)
-
-    problem = Problem.get(problem_number)
-    vertices = problem.vertices
-    edges = [Pair(vertices[a], vertices[b]) for a, b in problem.edges]
-    forbidden_edges = forbidden(problem.hole, edges, problem.epsilon)
-    with open(filepath, 'w') as f:
-        # convert all the points in forbidden_edges to (x, y) pairs
-        json.dump(forbidden_edges, f)
-    print('wrote', filepath)
+    print(get_forbidden(problem_number))

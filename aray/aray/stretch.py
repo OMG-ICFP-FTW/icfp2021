@@ -89,3 +89,7 @@ def delta_stretch(a: Point, b: Point, epsilon: int) -> List[Point]:
     # Deltas are just points centred on the origin
     d_old = (a.x - b.x) ** 2 + (a.y - b.y) ** 2
     return old_stretch(Point(0, 0), d_old, epsilon)
+
+
+def center_stretch(d_old: int, epsilon: int) -> List[Point]:
+    return old_stretch(Point(0, 0), d_old, epsilon)

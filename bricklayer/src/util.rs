@@ -1,7 +1,7 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeSet, HashSet};
 
 use geo::{Coordinate, Polygon};
-use judge::format::{Position};
+use judge::format::Position;
 
 pub fn compute_bounded_integer_points(boundary: &Polygon<f32>) -> Vec<geo::Point<f32>> {
     use geo::algorithm::euclidean_distance::EuclideanDistance;
@@ -59,11 +59,17 @@ impl Point {
     }
 
     pub fn sub(self, other: Point) -> Self {
-        Self { x: self.x - other.x, y: self.y - other.y }
+        Self {
+            x: self.x - other.x,
+            y: self.y - other.y,
+        }
     }
 
     pub fn abs(self) -> Self {
-        Self { x: self.x.abs(), y: self.y.abs() }
+        Self {
+            x: self.x.abs(),
+            y: self.y.abs(),
+        }
     }
 
     // pub fn add(self, other: Point) -> Self {
@@ -71,7 +77,7 @@ impl Point {
     // }
 }
 
-pub fn points_inside_hole(hole: &[Position]) -> BTreeSet<Point> {
+pub fn points_inside_hole(hole: &[Position]) -> HashSet<Point> {
     let hole_polygon = positions_to_polygon(hole);
     let float_points = compute_bounded_integer_points(&hole_polygon);
     float_points

@@ -38,7 +38,7 @@ fn ring_quad_options(r1: f32, r2: f32) -> Vec<Point> {
 #[derive(Debug)]
 struct Hole {
     vertices: Vec<Point>,
-    inside: BTreeSet<Point>,
+    inside: HashSet<Point>,
 }
 
 impl Hole {
@@ -226,6 +226,7 @@ impl Problem {
         // TODO change from DFS
         let mut poss = Vec::new();
         let mut best_solution: Option<(u32, judge::format::Solution)> = None;
+        let mut all_solutions: Vec<judge::format::Solution> = vec![];
         while let Some(next_expansion) = candidates.pop() {
             // println!("{:?}", next_expansion.locs);
             // if next_expansion.locs[0] == Some(Point { x: 10, y: 0 })
@@ -233,29 +234,13 @@ impl Problem {
             // {
             //     println!("WOW HI ==========================================");
             // }
-            if num_searched % 1000 == 0 {
-                println!("{}: {} candidates, best = {:?}", num_searched, candidates.len(), best_solution.as_ref().map(|(x,_)| x));
+            if num_searched % 10000 == 0 {
+                println!("{}: {} candidates", num_searched, candidates.len());
             }
 
             next_expansion.for_each_expansion(&self.figure, &self.hole, &mut poss, |pf| {
                 if pf.num_unfilled == 0 {
-                    // TODO check validity for concave holes
-                    let solution = pf.solution();
-                    let dislikes = judge::dislikes::compute_dislikes(&self.problem, &solution);
-                    let valid = judge::dislikes::figure_is_valid(&self.problem, &solution);
-
-                    // println!("FOUND {:?} ({:?}) {:?}", valid, dislikes, pf.locs);
-                    match (dislikes, valid, &best_solution) {
-                        (Ok(dislikes), Ok(()), Some((best_dislikes, _))) => {
-                            if dislikes < *best_dislikes {
-                                best_solution = Some((dislikes, solution));
-                            }
-                        }
-                        (Ok(dislikes), Ok(()), None) => {
-                            best_solution = Some((dislikes, solution));
-                        }
-                        _ => ()
-                    };
+                    all_solutions.push(pf.solution());
                 } else if !visited.contains(&pf) {
                     // TODO deduplicate with visited set of some kind?
                     visited.insert(pf.clone());
@@ -263,6 +248,25 @@ impl Problem {
                 }
             });
             num_searched += 1;
+        }
+
+        for solution in all_solutions {
+            // TODO check validity for concave holes
+            let dislikes = judge::dislikes::compute_dislikes(&self.problem, &solution);
+            let valid = judge::dislikes::figure_is_valid(&self.problem, &solution);
+
+            // println!("FOUND {:?} ({:?}) {:?}", valid, dislikes, pf.locs);
+            match (dislikes, valid, &best_solution) {
+                (Ok(dislikes), Ok(()), Some((best_dislikes, _))) => {
+                    if dislikes < *best_dislikes {
+                        best_solution = Some((dislikes, solution));
+                    }
+                }
+                (Ok(dislikes), Ok(()), None) => {
+                    best_solution = Some((dislikes, solution));
+                }
+                _ => ()
+            };
         }
 
         best_solution

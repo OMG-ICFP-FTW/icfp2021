@@ -250,6 +250,8 @@ class Brainfart:
         if self._num_search_workers is not None:
             solver.parameters.num_search_workers = self._num_search_workers
 
+        import ipdb;ipdb.set_trace()
+        
         solution_printer = VarArraySolutionPrinter(pose_vertices, self.hole)
         status = solver.SearchForAllSolutions(model, solution_printer)
         # status = solver.Solve(model, solution_callback=solution_printer)

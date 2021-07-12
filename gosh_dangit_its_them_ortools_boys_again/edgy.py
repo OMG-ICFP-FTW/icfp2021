@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 import os
 import json
+import math
 from collections import defaultdict
 from tqdm import tqdm
+from itertools import combinations
 from aray.types import Point, Edge
 from aray.problem import Problem, Pose
 from aray.boxlet import polygon_points
@@ -13,26 +15,92 @@ from aray.forbidden import get_forbidden
 from ortools.sat.python import cp_model
 
 
+def compute_dislikes(hole, pose):
+    total_dislike = 0
+    for hole_pt in hole:
+        total_dislike += min([dsq(hole_pt, pose_pt) for pose_pt in pose])
+    return total_dislike
+
+
+def dsq(v1, v2):
+    return (v2[0] - v1[0]) ** 2 + (v2[1] - v1[1])**2
+
 
 class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
     """Print intermediate solutions."""
 
-    def __init__(self, variables):
+    def __init__(self, pose_vertices, hole):
         cp_model.CpSolverSolutionCallback.__init__(self)
-        self.__variables = variables
-        self.__solution_count = 0
+        self._pose_vertices = pose_vertices
+        self._hole = hole
+        self._best_solution = None
+        self._least_dislike = None
 
     def on_solution_callback(self):
-        self.__solution_count += 1
-        for v in self.__variables:
-            print('%s=%i' % (v, self.Value(v)), end=' ')
-        print()
+        solution = []
+        for i, v in self._pose_vertices.items():
+            solution.append([self.Value(v[0]), self.Value(v[1])])
 
-    def solution_count(self):
-        return self.__solution_count
+        d = compute_dislikes(self._hole, solution)
+
+        if self._least_dislike is None or d < self._least_dislike:
+            self._least_dislike = d
+            self._best_solution = solution
+            print(f"Dislike: {self._least_dislike}")
+            print(json.dumps({
+                "vertices": self._best_solution,
+            }))
+
+    def best_solution(self):
+        return self._best_solution, self._least_dislike
 
 
-def get_solution(problem_number, timeout_seconds=100.0, zero=False):
+def get_solution(problem_number, timeout_seconds=100.0, constraints=-1, get_all=False):
+    if problem_number in [4,
+                          11,
+                          12,
+                          13,
+                          14,
+                          15,
+                          16,
+                          17,
+                          18,
+                          19,
+                          20,
+                          21,
+                          22,
+                          23,
+                          24,
+                          25,
+                          26,
+                          27,
+                          28,
+                          29,
+                          30,
+                          32,
+                          33,
+                          34,
+                          35,
+                          37,
+                          38,
+                          39,
+                          41,
+                          43,
+                          46,
+                          47,
+                          49,
+                          51,
+                          52,
+                          53,
+                          54,
+                          59,
+                          63,
+                          70,
+                          73,
+                          77,
+                          84]:
+        assert False, f'already computed {problem_number}'
+
     model = cp_model.CpModel()
 
     problem = Problem.get(problem_number)
@@ -71,8 +139,11 @@ def get_solution(problem_number, timeout_seconds=100.0, zero=False):
         model.AddAllowedAssignments([xvar, yvar], circle)
     assert len(edges) == len(problem.edges)
 
+    print('getting forbidden edges')
     forbidden_edges = get_forbidden(problem_number)
-    assert len(forbidden_edges) == len(edges), f'{len(forbidden_edges)} {len(edges)}'
+    print('got forbidden edges')
+    assert len(forbidden_edges) == len(
+        edges), f'{len(forbidden_edges)} {len(edges)}'
     for f, (a, b) in zip(forbidden_edges, problem.edges):
         vars = [pose[a].x, pose[a].y, pose[b].x, pose[b].y]
         forbid = set()
@@ -81,8 +152,7 @@ def get_solution(problem_number, timeout_seconds=100.0, zero=False):
             forbid.add((bx, by, ax, ay))
         model.AddForbiddenAssignments(vars, sorted(forbid))
 
-    # Hole == 0 
-    if zero:
+    if constraints == 0:
         for i, h in enumerate(problem.hole):
             vars = []
             for j, p in enumerate(pose):
@@ -91,29 +161,59 @@ def get_solution(problem_number, timeout_seconds=100.0, zero=False):
                 model.Add(p.y == h.y).OnlyEnforceIf(var)
                 vars.append(var)
             model.AddBoolOr(vars)
+    elif constraints > 0:
+        hole_vars = []
+        for i, h in enumerate(problem.hole):
+            hole_var = model.NewBoolVar(f'H{i}')
+            vars = []
+            for j, p in enumerate(pose):
+                var = model.NewBoolVar(f'H{i}_{j}')
+                model.Add(p.x == h.x).OnlyEnforceIf(var)
+                model.Add(p.y == h.y).OnlyEnforceIf(var)
+                vars.append(var)
+            model.AddBoolOr(vars).OnlyEnforceIf(hole_var)
+            hole_vars.append(hole_var)
+
+        n = len(problem.hole) - constraints
+        # get all combinations of hole variables with n
+        for comb in combinations(range(len(hole_vars)), n):
+            model.AddBoolOr([hole_vars[i] for i in comb])
 
     # Creates a solver and solves the model.
     print('ready to solve!')
     solver = cp_model.CpSolver()
     solver.parameters.max_time_in_seconds = timeout_seconds
     print('Solving')
-    status = solver.Solve(model)
-
-    print('status =', solver.StatusName(status))
-    for v in pose + edges:
-        print(v.x.Name(), '=', solver.Value(v.x))
-        print(v.y.Name(), '=', solver.Value(v.y))
-
-    vertices = [Point(solver.Value(v.x), solver.Value(v.y)) for v in pose]
-    score = dislikes(problem.hole, vertices)
-    print('score', score)
-    # def dislikes(hole: List[Point], points: List[Point]) -> int:
-    filename = f'/tmp/{problem_number}-{score}-cpsolver3.json'
-    with open(filename, 'w') as f:
-        points = [[p.x, p.y] for p in vertices]
-        data = dict(vertices=vertices)
-        json.dump(data, f)
-    print('saved', filename)
+    if get_all:
+        pose_vertices = {i: (p.x, p.y) for i, p in enumerate(pose)}
+        solution_printer = VarArraySolutionPrinter(pose_vertices, problem.hole)
+        status = solver.SearchForAllSolutions(model, solution_printer)
+        best, score = solution_printer.best_solution()
+        print('got best', best)
+        print('got best_score', score)
+        print('got status', status)
+        vertices = best
+        # score = dislikes(problem.hole, vertices)
+        # assert score == best_score
+        print('score', score)
+        # def dislikes(hole: List[Point], points: List[Point]) -> int:
+        filename = f'/tmp/{problem_number}-{score}-cpsolver3.json'
+        with open(filename, 'w') as f:
+            data = dict(vertices=vertices)
+            json.dump(data, f)
+        print('saved', filename)
+    else:
+        status = solver.Solve(model)
+        print('got status', status)
+        vertices = [Point(solver.Value(v.x), solver.Value(v.y)) for v in pose]
+        score = dislikes(problem.hole, vertices)
+        print('score', score)
+        # def dislikes(hole: List[Point], points: List[Point]) -> int:
+        filename = f'/tmp/{problem_number}-{score}-cpsolver3.json'
+        with open(filename, 'w') as f:
+            data = dict(vertices=vertices)
+            json.dump(data, f)
+        print('saved', filename)
 
 
 if __name__ == '__main__':
@@ -121,6 +221,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('problem_number', type=int)
     parser.add_argument('-t', '--timeout', type=float, default=1000.0)
-    parser.add_argument('-z', '--zero', action='store_true')
+    parser.add_argument('-c', '--constraints', type=int, default=-1)
+    parser.add_argument('-a', '--get_all', action='store_true')
     args = parser.parse_args()
-    get_solution(args.problem_number, args.timeout, args.zero)
+    get_solution(args.problem_number, args.timeout,
+                 args.constraints, args.get_all)

@@ -94,6 +94,9 @@ def forbidden(hole: List[Point], edges: List[Pair], epsilon: int) -> List[List[P
 def get_forbidden(problem_number):
     filepath = f'/tmp/{problem_number}-forbidden2.json'
     if not os.path.exists(filepath):
+        print('the time for computation has finished')
+        assert False
+        print('computing forbidden edges')
         problem = Problem.get(problem_number)
         vertices = problem.vertices
         edges = [Pair(vertices[a], vertices[b]) for a, b in problem.edges]
@@ -101,6 +104,8 @@ def get_forbidden(problem_number):
         with open(filepath, 'w') as f:
             json.dump(forbidden_edges, f)
         print('wrote', filepath)
+    else:
+        print('loading forbidden edges')
     with open(filepath, 'r') as f:
         data = json.load(f) 
     # need to convert back to pairs

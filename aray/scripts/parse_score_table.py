@@ -48,13 +48,13 @@ html = '''
                     <a href="/problems/3">3</a>
                 </td>
                 <td>5319</td>
-                <td>186</td>
+                <td>199</td>
             </tr>
             <tr>
                 <td>
                     <a href="/problems/4">4</a>
                 </td>
-                <td>2675</td>
+                <td>0</td>
                 <td>0</td>
             </tr>
             <tr>
@@ -62,7 +62,7 @@ html = '''
                     <a href="/problems/5">5</a>
                 </td>
                 <td>3632</td>
-                <td>43</td>
+                <td>29</td>
             </tr>
             <tr>
                 <td>
@@ -76,7 +76,7 @@ html = '''
                     <a href="/problems/7">7</a>
                 </td>
                 <td>2001</td>
-                <td>108</td>
+                <td>112</td>
             </tr>
             <tr>
                 <td>
@@ -244,7 +244,7 @@ html = '''
                     <a href="/problems/31">31</a>
                 </td>
                 <td>10457</td>
-                <td>5643</td>
+                <td>5025</td>
             </tr>
             <tr>
                 <td>
@@ -348,7 +348,7 @@ html = '''
                 <td>
                     <a href="/problems/46">46</a>
                 </td>
-                <td>1326</td>
+                <td>0</td>
                 <td>0</td>
             </tr>
             <tr>
@@ -397,7 +397,7 @@ html = '''
                 <td>
                     <a href="/problems/53">53</a>
                 </td>
-                <td></td>
+                <td>0</td>
                 <td>0</td>
             </tr>
             <tr>
@@ -461,13 +461,13 @@ html = '''
                     <a href="/problems/62">62</a>
                 </td>
                 <td>59652</td>
-                <td>4146</td>
+                <td>4156</td>
             </tr>
             <tr>
                 <td>
                     <a href="/problems/63">63</a>
                 </td>
-                <td>7804</td>
+                <td>0</td>
                 <td>0</td>
             </tr>
             <tr>
@@ -565,7 +565,7 @@ html = '''
                 <td>
                     <a href="/problems/77">77</a>
                 </td>
-                <td>240</td>
+                <td>0</td>
                 <td>0</td>
             </tr>
             <tr>
@@ -601,7 +601,7 @@ html = '''
                     <a href="/problems/82">82</a>
                 </td>
                 <td>26943</td>
-                <td>1078</td>
+                <td>1243</td>
             </tr>
             <tr>
                 <td>
@@ -614,7 +614,7 @@ html = '''
                 <td>
                     <a href="/problems/84">84</a>
                 </td>
-                <td>4157</td>
+                <td>0</td>
                 <td>0</td>
             </tr>
             <tr>
@@ -628,7 +628,7 @@ html = '''
                 <td>
                     <a href="/problems/86">86</a>
                 </td>
-                <td></td>
+                <td>98537</td>
                 <td>5354</td>
             </tr>
             <tr>
@@ -642,15 +642,15 @@ html = '''
                 <td>
                     <a href="/problems/88">88</a>
                 </td>
-                <td></td>
+                <td>19391</td>
                 <td>9908</td>
             </tr>
             <tr>
                 <td>
                     <a href="/problems/89">89</a>
                 </td>
-                <td></td>
-                <td>83006</td>
+                <td>366589</td>
+                <td>82872</td>
             </tr>
             <tr>
                 <td>
@@ -663,14 +663,14 @@ html = '''
                 <td>
                     <a href="/problems/91">91</a>
                 </td>
-                <td></td>
+                <td>242786</td>
                 <td>12879</td>
             </tr>
             <tr>
                 <td>
                     <a href="/problems/92">92</a>
                 </td>
-                <td></td>
+                <td>185064</td>
                 <td>33754</td>
             </tr>
             <tr>
@@ -684,7 +684,7 @@ html = '''
                 <td>
                     <a href="/problems/94">94</a>
                 </td>
-                <td></td>
+                <td>34748</td>
                 <td>1506</td>
             </tr>
             <tr>
@@ -692,14 +692,14 @@ html = '''
                     <a href="/problems/95">95</a>
                 </td>
                 <td></td>
-                <td>5321</td>
+                <td>5281</td>
             </tr>
             <tr>
                 <td>
                     <a href="/problems/96">96</a>
                 </td>
                 <td></td>
-                <td>13649</td>
+                <td>13834</td>
             </tr>
             <tr>
                 <td>
@@ -713,7 +713,7 @@ html = '''
                     <a href="/problems/98">98</a>
                 </td>
                 <td></td>
-                <td>29075</td>
+                <td>28409</td>
             </tr>
             <tr>
                 <td>
@@ -727,7 +727,7 @@ html = '''
                     <a href="/problems/100">100</a>
                 </td>
                 <td></td>
-                <td>3557</td>
+                <td>4193</td>
             </tr>
             <tr>
                 <td>
@@ -748,14 +748,14 @@ html = '''
                     <a href="/problems/103">103</a>
                 </td>
                 <td></td>
-                <td>49055</td>
+                <td>47952</td>
             </tr>
             <tr>
                 <td>
                     <a href="/problems/104">104</a>
                 </td>
-                <td></td>
-                <td>14656</td>
+                <td>❌</td>
+                <td>14918</td>
             </tr>
             <tr>
                 <td>
@@ -782,21 +782,21 @@ html = '''
                 <td>
                     <a href="/problems/108">108</a>
                 </td>
-                <td></td>
+                <td>191855</td>
                 <td>18274</td>
             </tr>
             <tr>
                 <td>
                     <a href="/problems/109">109</a>
                 </td>
-                <td></td>
+                <td>11106</td>
                 <td>321</td>
             </tr>
             <tr>
                 <td>
                     <a href="/problems/110">110</a>
                 </td>
-                <td></td>
+                <td>67682</td>
                 <td>11833</td>
             </tr>
             <tr>
@@ -811,13 +811,13 @@ html = '''
                     <a href="/problems/112">112</a>
                 </td>
                 <td></td>
-                <td>19511</td>
+                <td>20164</td>
             </tr>
             <tr>
                 <td>
                     <a href="/problems/113">113</a>
                 </td>
-                <td></td>
+                <td>121322</td>
                 <td>9360</td>
             </tr>
             <tr>
@@ -832,7 +832,7 @@ html = '''
                     <a href="/problems/115">115</a>
                 </td>
                 <td></td>
-                <td>36780</td>
+                <td>38408</td>
             </tr>
             <tr>
                 <td>
@@ -859,14 +859,14 @@ html = '''
                 <td>
                     <a href="/problems/119">119</a>
                 </td>
-                <td></td>
+                <td>303830</td>
                 <td>18972</td>
             </tr>
             <tr>
                 <td>
                     <a href="/problems/120">120</a>
                 </td>
-                <td></td>
+                <td>199308</td>
                 <td>13391</td>
             </tr>
             <tr>
@@ -887,7 +887,7 @@ html = '''
                 <td>
                     <a href="/problems/123">123</a>
                 </td>
-                <td></td>
+                <td>230177</td>
                 <td>13056</td>
             </tr>
             <tr>
@@ -895,7 +895,7 @@ html = '''
                     <a href="/problems/124">124</a>
                 </td>
                 <td></td>
-                <td>13607</td>
+                <td>14685</td>
             </tr>
             <tr>
                 <td>
@@ -915,7 +915,7 @@ html = '''
                 <td>
                     <a href="/problems/127">127</a>
                 </td>
-                <td></td>
+                <td>26485</td>
                 <td>16597</td>
             </tr>
             <tr>
@@ -923,7 +923,7 @@ html = '''
                     <a href="/problems/128">128</a>
                 </td>
                 <td></td>
-                <td>9833</td>
+                <td>9853</td>
             </tr>
             <tr>
                 <td>
@@ -944,7 +944,7 @@ html = '''
                     <a href="/problems/131">131</a>
                 </td>
                 <td></td>
-                <td>16614</td>
+                <td>15748</td>
             </tr>
             <tr>
                 <td>
@@ -962,7 +962,10 @@ html = '''
     </footer>
 </body>
 </html>
-'''
+
+
+
+'''.replace('❌', '')
 # parse the html
 soup = BeautifulSoup(html, 'html.parser')
 # find all the table
@@ -993,3 +996,115 @@ for row in data:
 # write to json file
 with open('/tmp/scores.json', 'w') as f:
     json.dump(scores, f)
+
+
+# %%
+# get the list of problem_numbers that our score is currently missing
+missing_scores = []
+for i in range(1, 131):
+    if i == 104:
+        continue
+    if scores[i]['our_score'] == None:
+        missing_scores.append(i)
+missing_scores
+
+# %%
+forbiddens_list = '''
+/tmp/104-forbidden2.json
+/tmp/108-forbidden2.json
+/tmp/109-forbidden2.json
+/tmp/10-forbidden2.json
+/tmp/110-forbidden2.json
+/tmp/113-forbidden2.json
+/tmp/119-forbidden2.json
+/tmp/11-forbidden2.json
+/tmp/120-forbidden2.json
+/tmp/123-forbidden2.json
+/tmp/127-forbidden2.json
+/tmp/12-forbidden2.json
+/tmp/130-forbidden2.json
+/tmp/132-forbidden2.json
+/tmp/13-forbidden2.json
+/tmp/14-forbidden2.json
+/tmp/15-forbidden2.json
+/tmp/16-forbidden2.json
+/tmp/17-forbidden2.json
+/tmp/18-forbidden2.json
+/tmp/19-forbidden2.json
+/tmp/1-forbidden2.json
+/tmp/20-forbidden2.json
+/tmp/21-forbidden2.json
+/tmp/22-forbidden2.json
+/tmp/23-forbidden2.json
+/tmp/24-forbidden2.json
+/tmp/25-forbidden2.json
+/tmp/26-forbidden2.json
+/tmp/27-forbidden2.json
+/tmp/28-forbidden2.json
+/tmp/29-forbidden2.json
+/tmp/2-forbidden2.json
+/tmp/30-forbidden2.json
+/tmp/31-forbidden2.json
+/tmp/32-forbidden2.json
+/tmp/33-forbidden2.json
+/tmp/34-forbidden2.json
+/tmp/35-forbidden2.json
+/tmp/36-forbidden2.json
+/tmp/37-forbidden2.json
+/tmp/38-forbidden2.json
+/tmp/39-forbidden2.json
+/tmp/3-forbidden2.json
+/tmp/40-forbidden2.json
+/tmp/41-forbidden2.json
+/tmp/42-forbidden2.json
+/tmp/43-forbidden2.json
+/tmp/44-forbidden2.json
+/tmp/45-forbidden2.json
+/tmp/46-forbidden2.json
+/tmp/47-forbidden2.json
+/tmp/48-forbidden2.json
+/tmp/49-forbidden2.json
+/tmp/4-forbidden2.json
+/tmp/50-forbidden2.json
+/tmp/51-forbidden2.json
+/tmp/52-forbidden2.json
+/tmp/53-forbidden2.json
+/tmp/54-forbidden2.json
+/tmp/55-forbidden2.json
+/tmp/56-forbidden2.json
+/tmp/57-forbidden2.json
+/tmp/58-forbidden2.json
+/tmp/59-forbidden2.json
+/tmp/5-forbidden2.json
+/tmp/60-forbidden2.json
+/tmp/61-forbidden2.json
+/tmp/63-forbidden2.json
+/tmp/66-forbidden2.json
+/tmp/67-forbidden2.json
+/tmp/69-forbidden2.json
+/tmp/6-forbidden2.json
+/tmp/70-forbidden2.json
+/tmp/73-forbidden2.json
+/tmp/77-forbidden2.json
+/tmp/7-forbidden2.json
+/tmp/81-forbidden2.json
+/tmp/84-forbidden2.json
+/tmp/86-forbidden2.json
+/tmp/88-forbidden2.json
+/tmp/89-forbidden2.json
+/tmp/8-forbidden2.json
+/tmp/91-forbidden2.json
+/tmp/92-forbidden2.json
+/tmp/94-forbidden2.json
+'''.strip().split()
+forbidden_numbers = [int(x[5:].split('-')[0]) for x in forbiddens_list]
+forbidden_numbers
+
+# %%
+ns = sorted(i for i in forbidden_numbers if i in missing_scores)
+' '.join(str(i) for i in ns)
+
+# %%
+# bash command to run these
+for x in ns:
+    print(f'python gosh_dangit_its_them_ortools_boys_again/edgy.py {x} --timeout 10000.0 &')

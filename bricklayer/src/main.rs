@@ -4,7 +4,7 @@ use log::{error, info};
 use log::{Level, Metadata, Record};
 use log::{LevelFilter, SetLoggerError};
 
-mod solver;
+// mod solver;
 mod vaniver;
 mod util;
 
@@ -105,6 +105,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let problem: judge::format::Problem =
                 serde_json::from_str(&contents).expect("JSON was not well-formatted");
             println!("{:?}", problem);
+
+            let v_problem = vaniver::Problem::new(problem);
+            let soln = v_problem.search();
+            println!("BEST: {:?}", soln);
 
             Ok(())
         }

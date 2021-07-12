@@ -234,7 +234,7 @@ impl Problem {
             //     println!("WOW HI ==========================================");
             // }
             if num_searched % 1000 == 0 {
-                println!("{}: {} candidates", num_searched, candidates.len());
+                println!("{}: {} candidates, best = {:?}", num_searched, candidates.len(), best_solution.as_ref().map(|(x,_)| x));
             }
 
             next_expansion.for_each_expansion(&self.figure, &self.hole, &mut poss, |pf| {

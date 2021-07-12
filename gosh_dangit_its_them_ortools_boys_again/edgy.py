@@ -77,13 +77,13 @@ def get_solution(problem_number, timeout_seconds=100.0, constraints=-1, get_all=
                           28,
                           29,
                           30,
-                          32,
                           33,
                           34,
                           35,
                           37,
                           38,
                           39,
+                          40,
                           41,
                           43,
                           46,
@@ -189,6 +189,7 @@ def get_solution(problem_number, timeout_seconds=100.0, constraints=-1, get_all=
         solution_printer = VarArraySolutionPrinter(pose_vertices, problem.hole)
         status = solver.SearchForAllSolutions(model, solution_printer)
         best, score = solution_printer.best_solution()
+        assert score is not None, "failed to find a solution"
         print('got best', best)
         print('got best_score', score)
         print('got status', status)

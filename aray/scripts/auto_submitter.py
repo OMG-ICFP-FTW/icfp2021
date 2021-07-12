@@ -24,7 +24,7 @@ def get_status(problem_id, pose_id):
 from glob import glob
 import re
 
-problems_to_ignore = [104]
+problems_to_ignore = [104, 45]
 tablefile = '/tmp/scores.json'
 with open(tablefile, 'r') as f:
     table = json.load(f)
@@ -35,7 +35,7 @@ table = {int(k): v for k, v in table.items()}
 regex = re.compile(r'(\d+)-(\d+)-cpsolver3.json')
 
 # search for files that match the pattern in /tmp
-for filename in glob('/tmp/*-cpsolver3.json'):
+for filename in sorted(glob('/tmp/*-cpsolver3.json')):
     match = regex.search(filename)
     if match:
         problem_number = int(match.group(1))
@@ -43,7 +43,7 @@ for filename in glob('/tmp/*-cpsolver3.json'):
             continue
         score = int(match.group(2))
         our_score = table[problem_number]['our_score']
-        print('comparing our score', our_score, 'to', score)
+        # print('comparing our score', our_score, 'to', score)
         if our_score is None or our_score > score:
             print('Got a better score, submitting')
             print('Problem', problem_number, 'our score', our_score, 'new score', score)

@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from aray.types import Point
 from aray.problem import Problem, Pose
 
-number = 64
+number = 126
 problem = Problem.get(number)
 
 hole = problem.hole
@@ -19,8 +19,8 @@ plt.gca().invert_yaxis()
 
 vertices = problem.vertices
 
-x = 60
-y = 205
+x = 140
+y = 150
 edges = problem.edges
 for a, b in edges:
     v, u = vertices[a], vertices[b]

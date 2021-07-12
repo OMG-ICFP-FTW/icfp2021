@@ -9,7 +9,7 @@ from tqdm import tqdm
 from aray.types import Point, Pair
 from aray.problem import Problem, Pose, BASE_PATH
 from aray.boxlet import polygon_points
-from aray.stretch import delta_stretch, center_stretch
+from aray.stretch import center_stretch
 from aray.dislike import dislikes
 from aray.util import dist
 
@@ -92,7 +92,7 @@ def forbidden(hole: List[Point], edges: List[Pair], epsilon: int) -> List[List[P
 
 
 def get_forbidden(problem_number):
-    filepath = f'/tmp/{problem_number}-forbidden.json'
+    filepath = f'/tmp/{problem_number}-forbidden2.json'
     if not os.path.exists(filepath):
         problem = Problem.get(problem_number)
         vertices = problem.vertices

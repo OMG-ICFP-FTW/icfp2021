@@ -6,7 +6,7 @@ from tqdm import tqdm
 from aray.types import Point, Edge
 from aray.problem import Problem, Pose
 from aray.boxlet import polygon_points
-from aray.stretch import delta_stretch
+from aray.stretch import slow_stretch
 from aray.dislike import dislikes
 from aray.util import dist
 from aray.forbidden import get_forbidden
@@ -67,7 +67,7 @@ def get_solution(problem_number, timeout_seconds=100.0, zero=False):
         model.Add(yvar == pose[a].y - pose[b].y)
         # Add contraints that the deltas must be in a given set
         Pa, Pb = problem.vertices[a], problem.vertices[b]
-        circle = sorted((p.x, p.y) for p in delta_stretch(Pa, Pb, epsilon))
+        circle = sorted((p.x, p.y) for p in slow_stretch(Pa, Pb, epsilon))
         model.AddAllowedAssignments([xvar, yvar], circle)
     assert len(edges) == len(problem.edges)
 
@@ -108,7 +108,7 @@ def get_solution(problem_number, timeout_seconds=100.0, zero=False):
     score = dislikes(problem.hole, vertices)
     print('score', score)
     # def dislikes(hole: List[Point], points: List[Point]) -> int:
-    filename = f'/tmp/{problem_number}-{score}-cpsolver2.json'
+    filename = f'/tmp/{problem_number}-{score}-cpsolver3.json'
     with open(filename, 'w') as f:
         points = [[p.x, p.y] for p in vertices]
         data = dict(vertices=vertices)

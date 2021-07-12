@@ -82,3 +82,10 @@ def old_stretch(start: Point, d_old: int, epsilon: int) -> List[Point]:
             for y in range(y_inner_max, y_outer_max + 1):
                 points.append(Point(x, y))
     return points
+
+
+def delta_stretch(a: Point, b: Point, epsilon: int) -> List[Point]:
+    """ Get the valid set of deltas for a given old squared distance """
+    # Deltas are just points centred on the origin
+    d_old = (a.x - b.x) ** 2 + (a.y - b.y) ** 2
+    return old_stretch(Point(0, 0), d_old, epsilon)

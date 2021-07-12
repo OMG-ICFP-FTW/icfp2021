@@ -70,7 +70,6 @@ class Problem:
 @dataclass
 class Pose:
     vertices: List[Point]
-    dislikes: Optional[int] = None
 
     @classmethod
     def from_json(cls, data, dislikes=None):

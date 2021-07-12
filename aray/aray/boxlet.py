@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import random
 from collections import namedtuple, defaultdict
 from dataclasses import dataclass
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Tuple, Union, Set
 
 from .util import floor, ceil
 from .types import Point, Quad
@@ -78,3 +78,12 @@ class Boxlet:
             assert t.x == b.x, f'{self}'
             for y in range(b.y, t.y + 1):
                 yield Point(t.x, y)
+
+
+def polygon_points(polygon: List[Point]) -> Set[Point]:
+    """ Get all of the points inside a polygon """
+    points = set()
+    for boxlet in Boxlet.from_polygon(polygon):
+        for point in boxlet.iter_points():
+            points.add(point)
+    return points

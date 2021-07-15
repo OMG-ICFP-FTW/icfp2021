@@ -22,14 +22,17 @@ def get_problem_json_path(i: int) -> str:
     filename = os.path.join(BASE_PATH, 'problems', f'{i}.json')
     # if it doesn't exist, download it
     if not os.path.exists(filename):
+        # first ensure the directory exists
+        os.makedirs(os.path.dirname(filename), exist_ok=True)
+        # download the file
         print(f'Downloading problem {i}')
         TEAM_NAME = "OMG ICFP FTW"
-        YOUR_API_TOKEN = "b5d3e724-0d12-4926-b223-e9cd180c3003"
-        headers = {"Authorization": "Bearer " + YOUR_API_TOKEN}
+        headers = {"Authorization": "Bearer " + os.environ['ICFP2021_API_KEY']}
         r = requests.get(
             f"https://poses.live/api/problems/{i}", headers=headers)
         r.raise_for_status()
         data = r.json()
+        print('got data', data)
         # Write data to file
         with open(filename, 'w') as f:
             json.dump(data, f)

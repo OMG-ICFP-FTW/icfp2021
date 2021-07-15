@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from typing import List, Set, Dict, Optional
 from collections import defaultdict
 import requests
+import matplotlib.pyplot as plt
 
 from .types import Point, Edge
 from .util import dist
@@ -68,6 +69,12 @@ class Problem:
 
     def json(self):
         return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
+
+    def plot(self, fig=None, ax=None):
+        if fig is None:
+            fig, ax = plt.subplots()
+        cycle = self.hole + [self.hole[0]]
+        ax.plot([c.x for c in cycle], [c.y for c in cycle], '-', color='black')
 
 
 @dataclass

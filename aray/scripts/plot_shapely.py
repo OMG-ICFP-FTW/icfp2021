@@ -2,11 +2,37 @@
 # plot_shapely.py
 
 # %%
+from dataclasses import dataclass
+from typing import List, Tuple, Set
 import matplotlib.pyplot as plt
 
 from aray.problem import Problem
 
 from shapely.geometry import Polygon, Point, LineString, GeometryCollection, LinearRing, MultiPoint
+
+'''
+Datastructures we want to have
+
+point: integer pair, not the shapely kind
+delta: integer pair, difference between two points
+edge: integer pair, indexes into a point or vertex list
+segment: point pair
+
+problem data:
+hole: list of points (form a polygon)
+vertices: list of points
+edges: list of edges, indexes into vertices
+
+computed data:
+points: sorted list of valid points
+edge_dists: list of edge distances, corresponds to edges
+dist_deltas: map from dist to a list of deltas
+delta_forbidden: map from delta to a list of forbidden segments
+
+
+
+'''
+
 
 # %%
 def get_points(hole):
@@ -50,17 +76,27 @@ for a, b in forbidden:
     ax.plot((a[0], b[0]), (a[1], b[1]))
 forbidden
 
-
 # %%
+problem = Problem.get(14)
+vert = problem.vertices
+dsq = lambda a, b: (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2
+edge_dsq = [dsq(vert[i], vert[j]) for i, j in problem.edges]
 
-edge = ((10,10), (12,9))
-ax.plot((edge[0][0], edge[1][0]), (edge[0][1], edge[1][1]))
+epsilon = problem.epsilon
+for d_old in sorted(set(edge_dsq)):
+    print(d_old, edge_dsq.count(d_old))
+    n = int(d_old ** 0.5 + 1)
+    deltas = []
+    for x in range(-n, n + 1):
+        for y in range(-n, n + 1):
+            d_new = dsq((0, 0), (x, y))
+            if abs(d_new / d_old - 1) <= epsilon / 1e6:
+                deltas.append((x, y))
+    print('d', deltas)
+    fig, ax = plt.subplots()
+    ax.grid(True)
+    # set x and y ticks
+    ax.set_xticks(range(-n, n + 1))
+    ax.set_yticks(range(-n, n + 1))
+    ax.scatter([p[0] for p in deltas], [p[1] for p in deltas])
 
-# %%
-poly = Polygon(problem.hole)
-mp = MultiPoint(edge)
-repr(mp.convex_hull)
-
-ls = LineString(edge)
-
-poly.crosses(ls)

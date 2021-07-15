@@ -1,0 +1,37 @@
+OMG ICFP FTW
+
+Remote group of friends of friends in the US.
+
+We were pretty disorganized and built a number of things.
+
+Some of the packages we made:
+
+## aray - python utilities for this years contest
+
+Just a bunch of utilities, including auto submissions, and a bunch of geometry processing and rendering.
+
+(All the drawing is done with matplotlib, a python plotting library, not very fancy)
+
+## gosh_dangit_its_them_ortools_boys_again - ortools CP-SAT based solver.
+
+both solver.py and edgy.py are implementations of this, the basic idea is:
+* create optimization variables (x and y positions of pose points)
+* enumerate a bunch of constraints on the variables
+* run the solver and either get a set of solutions or just a single solution
+
+## cc_gang, or "the crumbler" - a c++ based solver that does a force-based simulated-annealing-like thing
+* also has a visualizer to watch it run
+* found a bunch of solutions to problems too big for SAT solver
+
+## judge - a rust based solution verifier
+* very good for catching bugs in the solutions presented by our solvers
+* uses geo for polygons and geometry stuff
+
+## vaniver - a python based approach to randomly constructing valid solutions
+* this would pick points and build up a pose, backtracking if it were inconsistent
+* has some heuristics to find better scoring / more likely to be valid points
+
+# Other cruft that was lying around
+* an attempt at a gradient based optimization approach (in different branch, never worked)
+* a rewrite of `vaniver` into Rust (in different branch)
+* beginnings of a Rust based constructive pose builder

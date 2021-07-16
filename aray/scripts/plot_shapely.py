@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 
 from aray.problem import Problem
 
-from shapely.geometry import Polygon, Point, LineString, GeometryCollection, LinearRing, MultiPoint
+from shapely.geometry import Polygon, Point, LineString
 
 '''
 Datastructures we want to have
@@ -43,7 +43,8 @@ def get_points(hole):
         for y in range(int(min_y), int(max_y) + 1):
             if poly.intersects(Point(x, y)):
                 points.append((x, y))
-    return points
+    return sorted(points)
+
 
 def get_forbidden(hole, delta):
     poly = Polygon(hole)
@@ -61,6 +62,18 @@ def get_forbidden(hole, delta):
             forbidden.append((a, b))
     return forbidden
 
+
+def get_deltas(d_old: int, epsilon: int) -> List[Tuple[int, int]]:
+    deltas = []
+    n = int(d_old ** 0.5 + 1) * 2
+    for x in range(-n, n + 1):
+        for y in range(-n, n + 1):
+            d_new = dsq((0, 0), (x, y))
+            if abs(d_new / d_old - 1) <= epsilon / 1e6:
+                deltas.append((x, y))
+    return deltas
+
+
 fig, ax = plt.subplots()
 problem = Problem.get(14)
 problem.plot(fig, ax)
@@ -71,27 +84,24 @@ xs = [p[0] for p in points]
 ys = [p[1] for p in points]
 ax.scatter(xs, ys)
 
-forbidden = get_forbidden(problem.hole, (2, 0))
+forbidden = get_forbidden(problem.hole, (-1, -1))
 for a, b in forbidden:
     ax.plot((a[0], b[0]), (a[1], b[1]))
 forbidden
 
 # %%
+
 problem = Problem.get(14)
 vert = problem.vertices
-dsq = lambda a, b: (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2
+def dsq(a, b): return (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2
+
+
 edge_dsq = [dsq(vert[i], vert[j]) for i, j in problem.edges]
 
 epsilon = problem.epsilon
 for d_old in sorted(set(edge_dsq)):
     print(d_old, edge_dsq.count(d_old))
-    n = int(d_old ** 0.5 + 1)
-    deltas = []
-    for x in range(-n, n + 1):
-        for y in range(-n, n + 1):
-            d_new = dsq((0, 0), (x, y))
-            if abs(d_new / d_old - 1) <= epsilon / 1e6:
-                deltas.append((x, y))
+    deltas = get_deltas(d_old, epsilon)
     print('d', deltas)
     fig, ax = plt.subplots()
     ax.grid(True)
@@ -99,4 +109,3 @@ for d_old in sorted(set(edge_dsq)):
     ax.set_xticks(range(-n, n + 1))
     ax.set_yticks(range(-n, n + 1))
     ax.scatter([p[0] for p in deltas], [p[1] for p in deltas])
-

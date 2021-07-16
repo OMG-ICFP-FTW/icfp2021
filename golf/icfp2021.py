@@ -12,9 +12,6 @@ from shapely.geometry import LineString, Point, Polygon
 Coord = namedtuple('Coord', ['x', 'y'])
 Pair = namedtuple('Pair', ['ax', 'ay', 'bx', 'by'])
 
-API_KEY = os.environ['ICFP2021_API_KEY']
-HEADERS = {"Authorization": "Bearer " + API_KEY}
-
 
 def dist(a: Coord, b: Coord) -> int:
     ''' Squared distance used in the problem '''
@@ -25,6 +22,7 @@ class Problem:
     def __init__(self, problem_number: int):
         self.problem_number = problem_number
         self.solution = None
+        self.model = None
         problem = self.download()
         self.hole = [Coord(x, y) for x, y in problem['hole']]
         self.vertices = [Coord(x, y) for x, y in problem['figure']['vertices']]
@@ -37,10 +35,15 @@ class Problem:
         self.edge_dists = [self.edge_dist(i) for i in range(len(self.edges))]
         self.deltas = {d: self.get_deltas(d) for d in set(self.edge_dists)}
 
+    def get_headers(self) -> Dict:
+        ''' Get the headers to interact with API '''
+        api_key = os.environ['ICFP2021_API_KEY']
+        return {"Authorization": "Bearer " + api_key}
+
     def download(self) -> Dict:
         ''' Download a problem JSON '''
         problem_url = f"https://poses.live/api/problems/{self.problem_number}"
-        r = requests.get(problem_url, headers=HEADERS)
+        r = requests.get(problem_url, headers=self.get_headers())
         r.raise_for_status()
         return r.json()
 
@@ -111,6 +114,26 @@ class Problem:
         self.pose_vars = self.get_pose_vars()
         self.edge_vars = self.get_edge_vars()
 
+    def constrain_zero(self):
+        ''' Constrain to zero-dislikes solutions '''
+        assert self.model is not None, 'build model first'
+        for i, h in enumerate(self.hole):
+            vars = []
+            for j, p in enumerate(self.pose_vars):
+                var = self.model.NewBoolVar(f'H{i}P{j}')
+                self.model.Add(h.x == p.x).OnlyEnforceIf(var)
+                self.model.Add(h.y == p.y).OnlyEnforceIf(var)
+                vars.append(var)
+            self.model.AddBoolOr(vars)
+
+    def constrain_translate(self):
+        ''' Constrain solution to be a translation of original pose '''
+        for i, (j, k) in enumerate(self.edges):
+            a, b = self.vertices[j], self.vertices[k]
+            xvar, yvar = self.edge_vars[i]
+            self.model.Add(xvar == b.x - a.x)
+            self.model.Add(yvar == b.y - a.y)
+
     def valid_edge(self, a: Coord, b: Coord) -> bool:
         ''' Returns True if this is a valid edge, else False '''
         ab = LineString((a, b))
@@ -134,37 +157,38 @@ class Problem:
                     [u.x, u.y, v.x, v.y], [(a.x, a.y, b.x, b.y)])
                 valid = False
         return valid
-                
 
     def solve_iter(self) -> bool:
         ''' Do a single round of solving/validating, return True if solution is valid '''
         status = self.solver.Solve(self.model)
         if status not in (FEASIBLE, OPTIMAL):
-          print('Failed to find SAT, status:', self.solver.StatusName(status))
-          return False
-        vertices = [(self.solver.Value(p.x), self.solver.Value(p.y)) for p in self.pose_vars]
+            print('Failed to find SAT, status:',
+                  self.solver.StatusName(status))
+            return False
+        vertices = [(self.solver.Value(p.x), self.solver.Value(p.y))
+                    for p in self.pose_vars]
         self.solution = {'vertices': vertices}
         return self.valid_solution()
 
     def solve(self, max_tries=10, plot=False) -> bool:
         ''' Get a solution '''
-        self.build_model()
+        assert self.model is not None, 'build model first'
         self.solver = CpSolver()
         self.solver.parameters.max_time_in_seconds = 100.0
         for i in range(max_tries):
-          print('solve iter', i)
-          if self.solve_iter():
-            break
-          if plot:
-            self.plot()
+            print('solve iter', i)
+            if self.solve_iter():
+                break
+            if plot:
+                self.plot()
         else:
-          return False
+            return False
         return True
 
     def plot(self, fig=None, ax=None):
         ''' Plot the solution '''
         if fig is None or ax is None:
-            fig, ax = plt.subplots(figsize=(4,4))
+            fig, ax = plt.subplots(figsize=(4, 4))
         cycle = self.hole + [self.hole[0]]
         # Plot the hole
         ax.plot([c.x for c in cycle], [c.y for c in cycle], 'k-')
@@ -184,7 +208,7 @@ class Problem:
         ''' Upload the submission '''
         assert self.solution is not None
         url = f'https://poses.live/api/problems/{self.problem_number}/solutions'
-        r = requests.post(url, headers=HEADERS, json=self.solution)
+        r = requests.post(url, headers=self.get_headers(), json=self.solution)
         r.raise_for_status()
 
     def dislikes(self, solution=None) -> int:

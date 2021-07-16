@@ -1,48 +1,128 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
-# %%
-import json
 import os
 from collections import namedtuple
-from typing import Dict, List, NamedTuple, Tuple
+from typing import Dict, List, Tuple
 
 import matplotlib.pyplot as plt
 import requests
-from aray.problem import Problem
-from ortools.sat.python.cp_model import (CpModel, CpSolver,
-                                         CpSolverSolutionCallback, IntVar)
+from ortools.sat.python.cp_model import CpModel, CpSolver
 from shapely.geometry import LineString, Point, Polygon
 
-Coord = namedtuple('Point', ['x', 'y'])
+Coord = namedtuple('Coord', ['x', 'y'])
 Pair = namedtuple('Pair', ['ax', 'ay', 'bx', 'by'])
 
-
-class SolutionCollector(CpSolverSolutionCallback):
-    def __init__(self, variables):
-        super(SolutionCollector, self).__init__()
-        self.variables = variables
-        self.solutions = []
-
-    def on_solution_callback(self):
-        self.solutions.append([self.Value(v) for v in self.variables])
+HEADERS = {"Authorization": "Bearer " + os.environ['ICFP2021_API_KEY']}
 
 
-def get_problem(problem_number: int) -> Dict:
-    ''' Get a problem JSON, downloading it if not already downloaded '''
-    problem_dir = os.path.join(os.path.dirname(__file__), '../problems')
-    os.makedirs(problem_dir, exist_ok=True)
-    filename = os.path.join(problem_dir, f'{problem_number}.json')
-    if not os.path.exists(filename):
-        hdr = {"Authorization": "Bearer " + os.environ['ICFP2021_API_KEY']}
-        r = requests.get(f"https://poses.live/api/problems/{i}", headers=hdr)
+class Problem:
+    def __init__(self, problem_number: int):
+        self.problem_number = problem_number
+        problem = self.download()
+        self.hole = [Coord(x, y) for x, y in problem['hole']]
+        self.vertices = [Coord(x, y) for x, y in problem['figure']['vertices']]
+        self.edges = problem['figure']['edges']
+        self.epsilon = problem['epsilon']
+        # Compute geometry
+        self.bound = self.get_bound()
+        self.poly = Polygon(self.hole)
+        self.points = self.get_points()
+        self.edge_dists = [self.edge_dist(i) for i in range(len(self.edges))]
+        self.deltas = {dist: get_deltas(dist) for dist in set(self.edge_dists)}
+
+    def download(self) -> Dict:
+        ''' Download a problem JSON '''
+        problem_url = f"https://poses.live/api/problems/{self.problem_number}"
+        r = requests.get(problem_url, headers=HEADERS)
         r.raise_for_status()
-        with open(filename, 'w') as f:
-            json.dump(r.json(), f)
-    with open(filename, 'r') as f:
-        return json.load(f)
+        return r.json()
+
+    def get_bound(self) -> Pair:
+        ''' Get the bound of our solution xs and ys '''
+        xs, ys = [h.x for h in self.hole], [h.y for h in self.hole]
+        return Pair(min(xs), min(ys), max(xs), max(ys))
+
+    def get_points(self) -> List[Coord]:
+        ''' Get all valid points for the solution pose '''
+        points = []
+        for x in range(self.bound.ax, self.bound.bx + 1):
+            for y in range(self.bound.ay, self.bound.by + 1):
+                if self.poly.intersects(Point(x, y)):
+                    points.append(Point(x, y))
+        return points
+
+    def edge_dist(self, i: int) -> int:
+        ''' Get the squared distance of edge at index i '''
+        j, k = self.edges[i]
+        a, b = self.vertices[j], self.vertices[k]
+        return (a.x - b.x) ** 2 + (a.y - b.y) ** 2
+
+    def get_deltas(self, d_old: int) -> List[Coord]:
+        ''' Get the valid delta x,y for a given distance '''
+        n = int(d_old ** 0.5 + 1) * 2
+        deltas = []
+        for x in range(-n, n + 1):
+            for y in range(-n, n + 1):
+                if abs((x ** 2 + y ** 2) / d_old - 1) <= (self.epsilon / 1e6):
+                    deltas.append(Coord(x, y))
+        return deltas
+
+    def get_pose_vars(self) -> List[Coord]:
+        ''' Get x, y pairs of our optimization variables '''
+        pose = []
+        for i in range(len(self.vertices)):
+            # Optimization variables for x, y coordinates of pose vertices
+            xvar = self.model.NewIntVar(self.bound.ax, self.bound.bx, f'P{i}x')
+            yvar = self.model.NewIntVar(self.bound.ay, self.bound.by, f'P{i}y')
+            # Constrain pose points to be in set of valid points
+            self.model.AddAllowedAssignments([xvar, yvar], self.points)
+
+            pose.append(Coord(xvar, yvar))
+        return pose
+
+    def get_edge_vars(self) -> List[Coord]:
+        ''' Get the delta x, y variables we will use to constrain edges '''
+        dx, dy = self.bound.bx - self.bound.ax, self.bound.by - self.bound.ay
+        edge_vars = []
+        for i, (j, k) in enumerate(self.edges):
+            # Optimization variables for pose edges (delta x, delta y)
+            xvar = self.model.NewIntVar(-dx, dx, f'E{i}x')
+            yvar = self.model.NewIntVar(-dy, dy, f'E{i}y')
+            # Constrain varibles to be the difference between points
+            a, b = self.pose_vars[j], self.pose_vars[k]
+            self.model.Add(xvar == b.x - a.x)
+            self.model.Add(yvar == b.y - a.y)
+            # Constrain edges to be in set of valid deltas for given distance
+            dist = self.edge_dists[i]
+            self.model.AddAllowedAssignments([xvar, yvar], self.deltas[dist])
+
+            edge_vars.append(Coord(xvar, yvar))
+        return edge_vars
+
+    def build_model(self):
+        ''' Initial construction of our constraints '''
+        self.model = CpModel()
+        self.pose_vars = self.get_pose_vars()
+        self.edge_vars = self.get_edge_vars()
+
+    def valid_edge(a: Coord, b: Coord, points: List[Coord], poly: Polygon) -> bool:
+        ''' Returns True if this is a valid edge, else False '''
+        assert a in points and b in points, 'invalid edge check'
+        ab = LineString((a, b))
+        if poly.contains(ab) or ab.within(poly):
+            return True
+        elif poly.exterior.crosses(ab):
+            return False
+        elif poly.touches(ab) and not poly.exterior.contains(ab):
+            return False
+        return True
+
+    def solve(self):
+        ''' Get a solution '''
+        pass
 
 
-def get_bounds(hole: List[Point]) -> Pair:
+def get_bound(hole: List[Point]) -> Pair:
     ''' Get the x and y limits of our problem '''
     xs, ys = [p.x for p in hole], [p.y for p in hole]
     return Pair(min(xs), min(ys), max(xs), max(ys))
@@ -56,6 +136,30 @@ def get_points(bounds: Pair, poly: Polygon) -> List[Point]:
             if poly.intersects(Point(x, y)):
                 points.append(Point(x, y))
     return sorted(points)
+
+
+def get_deltas(d_old: int, epsilon: int) -> List[Coord]:
+    ''' Get the valid delta x,y for a given distance '''
+    n = int(d_old ** 0.5 + 1) * 2
+    deltas = []
+    for x in range(-n, n + 1):
+        for y in range(-n, n + 1):
+            if abs((x ** 2 + y ** 2) / d_old - 1) <= (epsilon / 1e6):
+                deltas.append(Coord(x, y))
+    return deltas
+
+
+def valid_edge(a: Coord, b: Coord, points: List[Coord], poly: Polygon) -> bool:
+    ''' Returns True if this is a valid edge, else False '''
+    assert a in points and b in points, 'invalid edge check'
+    ab = LineString((a, b))
+    if poly.contains(ab) or ab.within(poly):
+        return True
+    elif poly.exterior.crosses(ab):
+        return False
+    elif poly.touches(ab) and not poly.exterior.contains(ab):
+        return False
+    return True
 
 
 def get_dists(edges: List[Tuple[int, int]], vertices: List[Point]) -> List[int]:
@@ -80,27 +184,13 @@ def get_deltas(d_old: int, epsilon: int) -> List[Coord]:
     return sorted(deltas)
 
 
-def get_forbidden(points: List[Point], poly: Polygon, delta: Coord) -> List[Pair]:
-    ''' Given a delta, get all of the illegal pairs of points with that delta '''
-    forbidden = []
-    for a in points:
-        b = Point(a.x + delta.x, a.y + delta.y)
-        if b not in points:
-            continue
-        ab = LineString((a, b))
-        if poly.contains(ab) or ab.within(poly):
-            continue
-        elif poly.exterior.crosses(ab) or (poly.touches(ab) and not poly.exterior.contains(ab)):
-            forbidden.append(Pair(a.x, a.y, b.x, b.y))
-    return sorted(forbidden)
-
-
-def get_pose_vars(num_vertices: int, bounds: Pair, model: CpModel) -> List[Coord]:
-    ''' Get the pose position (x, y) variables we'll solve for '''
+def get_pose_vars(n: int, bounds: Pair, points: List[Coord], model: CpModel) -> List[Coord]:
+    ''' Get the pose position (x, y) variables we'll solve for, constrained to points '''
     pose = []
-    for i in range(num_vertices):
-        xvar = model.NewIntVar(bounds.ax, bounds.bx, 'P%ix' % i)
-        yvar = model.NewIntVar(bounds.ay, bounds.by, 'P%iy' % i)
+    for i in range(n):
+        xvar = model.NewIntVar(bounds.ax, bounds.bx, f'V{i}x')
+        yvar = model.NewIntVar(bounds.ay, bounds.by, f'V{i}y')
+        model.AddAllowedAssignments([xvar, yvar], points)
         pose.append((xvar, yvar))
     return pose
 
@@ -110,8 +200,8 @@ def get_edge_vars(bounds: Pair, edges: List[Tuple[int, int]], model: CpModel) ->
     edge_vars = []
     dx, dy = bounds.bx - bounds.ax, bounds.by - bounds.ay
     for i, (a, b) in enumerate(edges):
-        xvar = model.NewIntVar(-dx, dx, 'E%idx' % i)
-        yvar = model.NewIntVar(-dy, dy, 'E%idy' % i)
+        xvar = model.NewIntVar(-dx, dx, f'E{i}x')
+        yvar = model.NewIntVar(-dy, dy, f'E{i}y')
         edge_vars.append(Coord(xvar, yvar))
     return edge_vars
 
@@ -136,7 +226,7 @@ def solve(problem_number: int, timeout_seconds: float = 1000.0):
     solver = CpSolver()
     model = CpModel()
     solver.parameters.max_time_in_seconds = timeout_seconds
-    pose_vars = get_pose_vars(len(vertices), bounds, model)
+    pose_vars = get_pose_vars(len(vertices), bounds, points, model)
     edge_vars = get_edge_vars(bounds, edges, pose_vars)
     # TODO: have to flatten vars before passing to collector
 

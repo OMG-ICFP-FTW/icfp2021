@@ -12,7 +12,8 @@ from shapely.geometry import LineString, Point, Polygon
 Coord = namedtuple('Coord', ['x', 'y'])
 Pair = namedtuple('Pair', ['ax', 'ay', 'bx', 'by'])
 
-HEADERS = {"Authorization": "Bearer " + os.environ['ICFP2021_API_KEY']}
+API_KEY = os.environ['ICFP2021_API_KEY']
+HEADERS = {"Authorization": "Bearer " + API_KEY}
 
 
 def dist(a: Coord, b: Coord) -> int:
@@ -138,7 +139,9 @@ class Problem:
     def solve_iter(self) -> bool:
         ''' Do a single round of solving/validating, return True if solution is valid '''
         status = self.solver.Solve(self.model)
-        assert status in (FEASIBLE, OPTIMAL), self.solver.StatusName(status)
+        if status not in (FEASIBLE, OPTIMAL):
+          print('Failed to find SAT, status:', self.solver.StatusName(status))
+          return False
         vertices = [(self.solver.Value(p.x), self.solver.Value(p.y)) for p in self.pose_vars]
         self.solution = {'vertices': vertices}
         return self.valid_solution()

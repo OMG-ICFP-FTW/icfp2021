@@ -133,13 +133,13 @@ class Problem:
                     [u.x, u.y, v.x, v.y], [(a.x, a.y, b.x, b.y)])
                 valid = False
         return valid
+                
 
     def solve_iter(self) -> bool:
         ''' Do a single round of solving/validating, return True if solution is valid '''
         status = self.solver.Solve(self.model)
         assert status in (FEASIBLE, OPTIMAL), self.solver.StatusName(status)
-        vertices = [(self.solver.Value(p.x), self.solver.Value(p.y))
-                    for p in self.pose_vars]
+        vertices = [(self.solver.Value(p.x), self.solver.Value(p.y)) for p in self.pose_vars]
         self.solution = {'vertices': vertices}
         return self.valid_solution()
 
@@ -149,19 +149,19 @@ class Problem:
         self.solver = CpSolver()
         self.solver.parameters.max_time_in_seconds = 100.0
         for i in range(max_tries):
-            print('solve iter', i)
-            if self.solve_iter():
-                break
-            if plot:
-                self.plot()
+          print('solve iter', i)
+          if self.solve_iter():
+            break
+          if plot:
+            self.plot()
         else:
-            return False
+          return False
         return True
 
     def plot(self, fig=None, ax=None):
         ''' Plot the solution '''
         if fig is None or ax is None:
-            fig, ax = plt.subplots(figsize=(4, 4))
+            fig, ax = plt.subplots(figsize=(4,4))
         cycle = self.hole + [self.hole[0]]
         # Plot the hole
         ax.plot([c.x for c in cycle], [c.y for c in cycle], 'k-')

@@ -6,7 +6,7 @@ from typing import Dict, List, Optional
 
 import matplotlib.pyplot as plt
 import requests
-from ortools.sat.python.cp_model import CpModel, CpSolver
+from ortools.sat.python.cp_model import CpModel, CpSolver, OPTIMAL, FEASIBLE
 from shapely.geometry import LineString, Point, Polygon
 
 Coord = namedtuple('Coord', ['x', 'y'])
@@ -110,31 +110,56 @@ class Problem:
         self.pose_vars = self.get_pose_vars()
         self.edge_vars = self.get_edge_vars()
 
-    def valid_edge(a: Coord, b: Coord, points: List[Coord], poly: Polygon) -> bool:
+    def valid_edge(self, a: Coord, b: Coord) -> bool:
         ''' Returns True if this is a valid edge, else False '''
-        assert a in points and b in points, 'invalid edge check'
         ab = LineString((a, b))
-        if poly.contains(ab) or ab.within(poly):
+        if self.poly.contains(ab) or ab.within(self.poly):
             return True
-        elif poly.exterior.crosses(ab):
+        elif self.poly.exterior.crosses(ab):
             return False
-        elif poly.touches(ab) and not poly.exterior.contains(ab):
+        elif self.poly.touches(ab) and not self.poly.exterior.contains(ab):
             return False
         return True
 
+    def valid_solution(self) -> bool:
+        ''' Return True if solution is invalid, otherwise False and add constraints '''
+        vertices = [Coord(*p) for p in self.solution['vertices']]
+        valid = True
+        for i, (j, k) in enumerate(self.edges):
+            a, b = vertices[j], vertices[k]
+            if not self.valid_edge(a, b):
+                u, v = self.pose_vars[i], self.pose_vars[j]
+                self.model.AddForbiddenAssignments(
+                    [u.x, u.y, v.x, v.y], [a.x, a.y, b.x, b.y])
+                valid = False
+        return valid
+                
+
+    def solve_iter(self) -> bool:
+        ''' Do a single round of solving/validating, return True if solution is valid '''
+        status = self.solver.Solve(self.model)
+        assert status in (FEASIBLE, OPTIMAL), self.solver.StatusName(status)
+        vertices = [(self.solver.Value(p.x), self.solver.Value(p.y))
+                    for p in self.pose]
+        self.solution = {'vertices': vertices}
+        return self.valid_solution()
+
     def solve(self):
         ''' Get a solution '''
-        solver = CpSolver()
-        solver.parameters.max_time_in_seconds = 100.0
-        status = solver.Solve(self.model)
+        self.solver = CpSolver()
+        self.solver.parameters.max_time_in_seconds = 100.0
+        self.solve_iter()
 
     def plot(self, fig=None, ax=None):
         ''' Plot the solution '''
         if fig is None or ax is None:
             fig, ax = plt.subplots()
         cycle = self.hole + [self.hole[0]]
+        # Plot the hole
         ax.plot([c.x for c in cycle], [c.y for c in cycle], 'k-')
+        # Plot all of the valid points
         ax.scatter([p.x for p in self.points], [p.y for p in self.points], s=2)
+        # Plot our solution if we have one
         if self.solution is not None:
             vert = [Coord(*p) for p in self.solution['vertices']]
             for i, j in self.edges:

@@ -54,7 +54,7 @@ class Problem:
         for x in range(self.bound.ax, self.bound.bx + 1):
             for y in range(self.bound.ay, self.bound.by + 1):
                 if self.poly.intersects(Point(x, y)):
-                    points.append(Point(x, y))
+                    points.append(Coord(x, y))
         return points
 
     def edge_dist(self, i: int) -> int:
@@ -128,9 +128,9 @@ class Problem:
         for i, (j, k) in enumerate(self.edges):
             a, b = vertices[j], vertices[k]
             if not self.valid_edge(a, b):
-                u, v = self.pose_vars[i], self.pose_vars[j]
+                u, v = self.pose_vars[j], self.pose_vars[k]
                 self.model.AddForbiddenAssignments(
-                    [u.x, u.y, v.x, v.y], [a.x, a.y, b.x, b.y])
+                    [u.x, u.y, v.x, v.y], [(a.x, a.y, b.x, b.y)])
                 valid = False
         return valid
                 
@@ -139,21 +139,29 @@ class Problem:
         ''' Do a single round of solving/validating, return True if solution is valid '''
         status = self.solver.Solve(self.model)
         assert status in (FEASIBLE, OPTIMAL), self.solver.StatusName(status)
-        vertices = [(self.solver.Value(p.x), self.solver.Value(p.y))
-                    for p in self.pose]
+        vertices = [(self.solver.Value(p.x), self.solver.Value(p.y)) for p in self.pose_vars]
         self.solution = {'vertices': vertices}
         return self.valid_solution()
 
-    def solve(self):
+    def solve(self, max_tries=10, plot=False) -> bool:
         ''' Get a solution '''
+        self.build_model()
         self.solver = CpSolver()
         self.solver.parameters.max_time_in_seconds = 100.0
-        self.solve_iter()
+        for i in range(max_tries):
+          print('solve iter', i)
+          if self.solve_iter():
+            break
+          if plot:
+            self.plot()
+        else:
+          return False
+        return True
 
     def plot(self, fig=None, ax=None):
         ''' Plot the solution '''
         if fig is None or ax is None:
-            fig, ax = plt.subplots()
+            fig, ax = plt.subplots(figsize=(4,4))
         cycle = self.hole + [self.hole[0]]
         # Plot the hole
         ax.plot([c.x for c in cycle], [c.y for c in cycle], 'k-')
@@ -164,13 +172,10 @@ class Problem:
             vert = [Coord(*p) for p in self.solution['vertices']]
             for i, j in self.edges:
                 a, b = vert[i], vert[j]
-                ax.plot([a.x, b.x], [a.y, b.y], 'r-')
-        # Flip since the problem renderings use inverted y
-        ax.invert_yaxis()
-        # Draw gridlines to help visualise issues with boundaries
-        ax.grid(True)
-        ax.set_xticks(range(self.bounds.ax, self.bounds.bx + 1))
-        ax.set_yticks(range(self.bounds.ay, self.bounds.by + 1))
+                color = 'g-' if self.valid_edge(a, b) else 'r-'
+                ax.plot([a.x, b.x], [a.y, b.y], color)
+        ax.invert_yaxis()  # Flip since the problem renderings use inverted y
+        plt.show()
 
     def submit(self):
         ''' Upload the submission '''
@@ -181,5 +186,5 @@ class Problem:
 
     def dislikes(self, solution=None) -> int:
         ''' Calculate the dislikes for a given solution '''
-        vertices = self.solution['vertices']
+        vertices = [Coord(*p) for p in self.solution['vertices']]
         return sum(min([dist(h, v) for v in vertices]) for h in self.hole)

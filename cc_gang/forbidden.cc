@@ -15,8 +15,7 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include <emmintrin.h>
-#include <xmmintrin.h>
+#include <x86intrin.h>
 
 // #include <SDL.h>
 #include <curl/curl.h>

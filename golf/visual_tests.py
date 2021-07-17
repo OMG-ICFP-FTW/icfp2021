@@ -173,8 +173,8 @@ class TestCase:
 
     def plot(self):
         fig, ax = plt.subplots(figsize=(2,2))
-        for i in range(len(self.hole) - 1):
-            h1, h2 = self.hole[i], self.hole[i + 1]
+        for i in range(len(self.hole)):
+            h1, h2 = self.hole[i], self.hole[(i + 1) % len(self.hole)]
             ax.plot([h1.x, h2.x], [h1.y, h2.y], 'co-', alpha=.5)
         ax.plot([self.a.x, self.b.x], [self.a.y, self.b.y], 'mo-', alpha=.5)
         # Show gridlines

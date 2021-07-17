@@ -134,6 +134,14 @@ class Problem:
             self.model.Add(xvar == b.x - a.x)
             self.model.Add(yvar == b.y - a.y)
 
+    def hint_translate(self):
+        ''' Hint the solution should be a translation of original pose '''
+        for i, (j, k) in enumerate(self.edges):
+            a, b = self.vertices[j], self.vertices[k]
+            xvar, yvar = self.edge_vars[i]
+            self.model.AddHint(xvar, b.x - a.x)
+            self.model.AddHint(yvar, b.y - a.y)
+
     def valid_edge(self, a: Coord, b: Coord) -> bool:
         ''' Returns True if this is a valid edge, else False '''
         ab = LineString((a, b))

@@ -813,7 +813,7 @@ void Anneal(const Problem& problem, Annealer& a, Canvas* canvas) {
 }
 
 std::unique_ptr<Solution> Anneal(const Problem& problem, Canvas* canvas) {
-  Annealer a(0.80f, 10000000);
+  Annealer a(0.80f, 500000);
   Anneal(problem, a, canvas);
 
   if (a.solution) {

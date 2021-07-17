@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <time.h>
 
+#include <emmintrin.h>
 #include <xmmintrin.h>
 
 // #include <SDL.h>

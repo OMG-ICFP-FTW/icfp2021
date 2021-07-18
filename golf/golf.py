@@ -188,15 +188,16 @@ class Problem:
 
 
 if __name__ == '__main__':
-    for problem_number in range(1, 133):
-        print('Loading problem', problem_number)
-        problem = Problem(problem_number)
-        print('Building model')
-        problem.build_model()
-        print('Adding forbidden edge constraints')
-        problem.constrain_forbidden()
-        print('Solving')
-        if problem.solve(timeout=10000.0):
-            print('Submitting, expect score:', problem.dislikes())
-            problem.submit()
-        print('Finished')
+    import sys
+    problem_number = int(sys.argv[1])
+    print('Loading problem', problem_number)
+    problem = Problem(problem_number)
+    print('Building model for', problem_number)
+    problem.build_model()
+    print('Adding forbidden edge constraints to', problem_number)
+    problem.constrain_forbidden()
+    print('Solving', problem_number)
+    if problem.solve(timeout=10000.0):
+        print('Submitting', problem_number, 'expect score:', problem.dislikes())
+        problem.submit()
+    print('Finished', problem_number)

@@ -123,43 +123,14 @@ class Problem:
         self.pose_vars = self.get_pose_vars()
         self.edge_vars = self.get_edge_vars()
 
-    def constrain_zero(self):
-        ''' Constrain to zero-dislikes solutions '''
-        assert self.model is not None, 'build model first'
-        for i, h in enumerate(self.hole):
-            vars = []
-            for j, p in enumerate(self.pose_vars):
-                var = self.model.NewBoolVar(f'H{i}P{j}')
-                self.model.Add(h.x == p.x).OnlyEnforceIf(var)
-                self.model.Add(h.y == p.y).OnlyEnforceIf(var)
-                vars.append(var)
-            self.model.AddBoolOr(vars)
-
-    def constrain_translate(self):
-        ''' Constrain solution to be a translation of original pose '''
-        for i, (j, k) in enumerate(self.edges):
-            a, b = self.vertices[j], self.vertices[k]
-            xvar, yvar = self.edge_vars[i]
-            self.model.Add(xvar == b.x - a.x)
-            self.model.Add(yvar == b.y - a.y)
-
-    def hint_translate(self):
-        ''' Hint the solution should be a translation of original pose '''
-        for i, (j, k) in enumerate(self.edges):
-            a, b = self.vertices[j], self.vertices[k]
-            xvar, yvar = self.edge_vars[i]
-            self.model.AddHint(xvar, b.x - a.x)
-            self.model.AddHint(yvar, b.y - a.y)
-
     def load_forbidden(self):
         ''' Load precomputed forbidden edges '''
         assert self.forbidden is None, 'already loaded'
         filepath = f'/tmp/{self.problem_number}_forbidden_edges.bin'
-        if not os.path.exists(filepath):
-            cmd = ['/home/aray/code/icfp2021/icfp2021/cc_gang/forbidden',
-                   f'{self.problem_number}', f'/tmp/{self.problem_number}.problem']
-            print(f'running {cmd}')
-            subprocess.check_call(cmd)
+        cmd = ['/home/aray/code/icfp2021/icfp2021/cc_gang/forbidden',
+                f'{self.problem_number}', f'/tmp/{self.problem_number}.problem']
+        print(f'running {cmd}')
+        subprocess.check_call(cmd)
         assert os.path.exists(filepath)
         # Read the file into a bytearray
         with open(filepath, 'rb') as f:
@@ -189,75 +160,19 @@ class Problem:
                 forbidden.extend(self.forbidden[delta])
             self.model.AddForbiddenAssignments(vars, forbidden)
 
-    def valid_edge(self, a: Coord, b: Coord) -> bool:
-        ''' Returns True if this is a valid edge, else False '''
-        ab = LineString((a, b))
-        if self.poly.contains(ab) or ab.within(self.poly):
-            return True
-        elif self.poly.exterior.crosses(ab):
-            return False
-        elif self.poly.touches(ab) and not self.poly.exterior.contains(ab):
-            return False
-        return True
-
-    def valid_solution(self) -> bool:
-        ''' Return True if solution is invalid, otherwise False and add constraints '''
-        vertices = [Coord(*p) for p in self.solution['vertices']]
-        valid = True
-        for i, (j, k) in enumerate(self.edges):
-            a, b = vertices[j], vertices[k]
-            if not self.valid_edge(a, b):
-                u, v = self.pose_vars[j], self.pose_vars[k]
-                self.model.AddForbiddenAssignments(
-                    [u.x, u.y, v.x, v.y], [(a.x, a.y, b.x, b.y)])
-                valid = False
-        return valid
-
-    def solve_iter(self) -> bool:
-        ''' Do a single round of solving/validating, return True if solution is valid '''
-        status = self.solver.Solve(self.model)
-        if status not in (FEASIBLE, OPTIMAL):
-            print('Failed to find SAT, status:',
-                  self.solver.StatusName(status))
-            return False
-        vertices = [(self.solver.Value(p.x), self.solver.Value(p.y))
-                    for p in self.pose_vars]
-        self.solution = {'vertices': vertices}
-        return self.valid_solution()
-
-    def solve(self, max_tries=10, plot=False, timeout=100.0) -> bool:
+    def solve(self, timeout=100.0) -> bool:
         ''' Get a solution '''
         assert self.model is not None, 'build model first'
         self.solver = CpSolver()
         self.solver.parameters.max_time_in_seconds = timeout
-        for i in range(max_tries):
-            print('solve iter', i)
-            if self.solve_iter():
-                break
-            if plot:
-                self.plot()
-        else:
-            return False
-        return True
-
-    def plot(self, fig=None, ax=None):
-        ''' Plot the solution '''
-        if fig is None or ax is None:
-            fig, ax = plt.subplots(figsize=(4, 4))
-        cycle = self.hole + [self.hole[0]]
-        # Plot the hole
-        ax.plot([c.x for c in cycle], [c.y for c in cycle], 'k-')
-        # Plot all of the valid points
-        ax.scatter([p.x for p in self.points], [p.y for p in self.points], s=2)
-        # Plot our solution if we have one
-        if self.solution is not None:
-            vert = [Coord(*p) for p in self.solution['vertices']]
-            for i, j in self.edges:
-                a, b = vert[i], vert[j]
-                color = 'g-' if self.valid_edge(a, b) else 'r-'
-                ax.plot([a.x, b.x], [a.y, b.y], color)
-        ax.invert_yaxis()  # Flip since the problem renderings use inverted y
-        plt.show()
+        status = self.solver.Solve(self.model)
+        print('Solve status:', self.solver.StatusName(status))
+        if status in (FEASIBLE, OPTIMAL):
+            vertices = [(self.solver.Value(p.x), self.solver.Value(p.y))
+                        for p in self.pose_vars]
+            self.solution = {'vertices': vertices}
+            return True
+        return False
 
     def submit(self):
         ''' Upload the submission '''
@@ -273,7 +188,7 @@ class Problem:
 
 
 if __name__ == '__main__':
-    for problem_number in range(2,132):
+    for problem_number in range(1, 133):
         print('Loading problem', problem_number)
         problem = Problem(problem_number)
         print('Building model')
@@ -281,7 +196,7 @@ if __name__ == '__main__':
         print('Adding forbidden edge constraints')
         problem.constrain_forbidden()
         print('Solving')
-        if problem.solve(max_tries=1, timeout=1000.0):
+        if problem.solve(timeout=10000.0):
             print('Submitting, expect score:', problem.dislikes())
             problem.submit()
         print('Finished')

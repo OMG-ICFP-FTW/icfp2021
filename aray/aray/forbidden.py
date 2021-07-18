@@ -3,6 +3,8 @@
 #!/usr/bin/env python3
 import os
 import json
+import subprocess
+from ctypes import c_uint16, Structure
 from typing import List, Tuple, Set, NamedTuple
 from collections import defaultdict, namedtuple
 from tqdm import tqdm
@@ -12,6 +14,22 @@ from aray.boxlet import polygon_points
 from aray.stretch import center_stretch
 from aray.dislike import dislikes
 from aray.util import dist
+
+class POINT(Structure):
+    _pack_ = 1
+    _fields_ = [("x", c_uint16),
+                ("y", c_uint16)]
+
+    def conv(self):
+        return Point(self.x, self.y)
+
+class PAIR(Structure):
+    _pack_ = 1
+    _fields_ = [("a", POINT),
+                ("b", POINT)]
+
+    def conv(self):
+        return Pair(self.a.conv(), self.b.conv())
 
 
 def orient(p: Point, q: Point, r: Point):
@@ -91,7 +109,7 @@ def forbidden(hole: List[Point], edges: List[Pair], epsilon: int) -> List[List[P
     return forbidden_edges
 
 
-def get_forbidden(problem_number):
+def get_forbidden_old(problem_number):
     filepath = f'/tmp/{problem_number}-forbidden2.json'
     if not os.path.exists(filepath):
         print('the time for computation has finished')
@@ -107,9 +125,36 @@ def get_forbidden(problem_number):
     else:
         print('loading forbidden edges')
     with open(filepath, 'r') as f:
-        data = json.load(f) 
+        data = json.load(f)
     # need to convert back to pairs
     return [[Pair(Point(*a), Point(*b)) for a, b in d] for d in data]
+
+
+def bytes_to_pair(data):
+    return Pair(Point(int(data[0]), int(data[1])), Point(int(data[2]), int(data[3])))
+
+
+def pair_to_delta(pair):
+    return (pair.b.x - pair.a.x, pair.b.y - pair.a.y)
+
+
+def get_forbidden(problem_number):
+    filepath = f'/tmp/{problem_number}_forbidden_edges.bin'
+    if not os.path.exists(filepath):
+        cmd = ['/home/aray/code/icfp2021/icfp2021/cc_gang/forbidden',
+               f'{problem_number}', f'/tmp/{problem_number}.problem']
+        print(f'running {cmd}')
+        subprocess.check_call(cmd)
+    assert os.path.exists(filepath)
+    with open(filepath, 'rb') as f:
+        data = f.read()
+    print(f'loaded {filepath}')
+    assert len(data) % 8 == 0, f'{len(data)} is not a multiple of 4'
+    all_pairs = 
+    
+    all_pairs = [bytes_to_pair(data[i:i + 4]) for i in range(0, len(data), 4)]
+    all_deltas = set(pair_to_delta(p) for p in all_pairs)
+    return
 
 
 if __name__ == '__main__':

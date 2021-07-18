@@ -57,6 +57,8 @@ from itertools import product
 from collections import namedtuple
 import matplotlib.pyplot as plt
 
+from andtools import Problem
+
 # %%
 # https://www.geeksforgeeks.org/check-if-two-given-line-segments-intersect/
 Coord = namedtuple('Coord', ['x', 'y'])
@@ -148,8 +150,6 @@ def valid(a: Coord, b: Coord, c: Coord, d: Coord) -> bool:
     
     # Special Cases
 
-
-
     if o1 == 0 or o2 == 0 or o3 == 0 or o4 == 0:
         return False
     return (o1 != o2 and o3 != o4)  # crossing intersection or not
@@ -190,11 +190,13 @@ class TestCase:
         ax.set_yticks(range(ymin, ymax + 1))
         # set title
         ax.set_title(self.name)
+        # set labels
+        valid = self.valid()
+        ax.set_xlabel(f'Got: {valid}')
+        ax.set_ylabel(f'Expected: {self.expected}')
+        if valid != self.expected:
+            ax.set_facecolor((1, .7, .7))
         # Set coloring
-        # if self.expected == self.valid():
-        #     ax.set_facecolor((.7, 1.0, .7))  # light green
-        # else:
-        #     ax.set_facecolor((1.0, .7, .7))  # light red
         plt.show()
 
 # %% Test AB HH are identical
